@@ -1,6 +1,7 @@
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY target/sentinelops-ai-0.2.0-SNAPSHOT.jar app.jar
+ARG JAR_FILE=target/sentinelops-ai-*.jar
+COPY ${JAR_FILE} app.jar
 EXPOSE 8080
 USER 10001
 ENTRYPOINT ["java","-jar","/app/app.jar"]
