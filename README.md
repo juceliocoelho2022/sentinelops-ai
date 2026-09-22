@@ -2,212 +2,131 @@
 
 > **Autonomous Incident Intelligence for Java Systems**
 
-[![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![AI](https://img.shields.io/badge/AI-Agentic%20Architecture-8A2BE2)](#-ai-agents)
-[![Status](https://img.shields.io/badge/status-MVP%20v0.1-blue)](#-roadmap)
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-6DB33F?logo=springboot&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
+![Status](https://img.shields.io/badge/status-v0.2-blue)
 
-**SentinelOps AI** é uma plataforma de engenharia de confiabilidade orientada por IA para **observar, investigar e responder a incidentes em sistemas Java distribuídos**.
+**SentinelOps AI** é uma plataforma em evolução para investigação governada de incidentes em sistemas Java. O projeto combina fundamentos de backend, persistência, observabilidade e uma arquitetura alvo de agentes especializados.
 
-A proposta combina **Java + Spring Boot + observabilidade + Agentic AI + governança**, permitindo que agentes especializados correlacionem métricas, logs, traces, banco de dados e alterações de código para gerar hipóteses de causa raiz e recomendações — mantendo ações críticas sob **Policy Engine e Human-in-the-Loop**.
+> **RECOMMEND != EXECUTE** — a IA investiga e recomenda; ações críticas devem permanecer sob políticas determinísticas, autorização, aprovação humana e auditoria.
 
----
+## ✅ Estado atual — v0.2
 
-## 🎯 Problema
+Implementado e validado localmente:
 
-Em arquiteturas distribuídas, descobrir por que um serviço falhou pode exigir navegar manualmente entre:
+- Java 21 + Spring Boot 3.5.5
+- REST API com DTOs e Bean Validation
+- Service Layer + Spring Data JPA / Hibernate
+- PostgreSQL 17 em Docker
+- Flyway com migração versionada
+- ProblemDetail + `@RestControllerAdvice`
+- Actuator
+- OpenAPI / Swagger
+- `IncidentAgent` determinístico
+- transição de incidente para `INVESTIGATING`
+- resumo operacional do dashboard
+- JUnit 5 + JaCoCo (suíte inicial)
 
-- métricas no Prometheus;
-- logs no Loki;
-- traces distribuídos no Tempo;
-- eventos Kafka;
-- banco PostgreSQL;
-- Kubernetes;
-- deploys, commits e Pull Requests.
-
-O SentinelOps AI pretende transformar esses sinais dispersos em uma **investigação de incidente correlacionada e auditável**.
-
-## 💡 Exemplo
-
-Imagine que o `payment-service` passe de **300 ms para 2,4 s** de latência.
-
-O SentinelOps AI poderá:
-
-1. detectar a degradação;
-2. consultar métricas do serviço;
-3. correlacionar exceções e timeouts nos logs;
-4. analisar traces distribuídos;
-5. verificar saturação ou lentidão no PostgreSQL;
-6. relacionar o início do problema a deploys recentes;
-7. produzir uma hipótese de causa raiz;
-8. sugerir uma correção;
-9. solicitar aprovação humana antes de qualquer ação crítica.
-
-> **A IA investiga e recomenda. A plataforma governa o que pode ser executado.**
-
----
+A integração com Prometheus, Loki, Tempo, LLMs e demais agentes permanece no roadmap; o README não apresenta essas capacidades como já implementadas.
 
 ## 🏗️ Arquitetura alvo
 
 ```text
- Java / Spring Services
-          │
-          ├──── Prometheus ─── Metrics
-          ├──── Loki ───────── Logs
-          ├──── Tempo ──────── Traces
-          ├──── Kafka ──────── Events
-          ├──── PostgreSQL ─── Data
-          └──── GitHub ─────── Code / PRs
-                     │
-                     ▼
-              ┌───────────────┐
-              │ SentinelOps AI│
-              └───────┬───────┘
-                      │
-        ┌─────────────┼──────────────┐
-        ▼             ▼              ▼
- IncidentAgent  LogAnalyzerAgent  PerformanceAgent
-        │             │              │
-        └─────────────┼──────────────┘
-                      ▼
-              SecurityAgent
-                      │
-                      ▼
-                  CodeAgent
-                      │
-                      ▼
-             Spring AI / LLM
-                      │
-               Tool Calling / MCP
-                      │
-                      ▼
-                Policy Engine
-                      │
-              Human-in-the-Loop
-                      │
-                      ▼
-              Controlled Actions
+Java / Spring Services
+        │
+        ├── Metrics / Prometheus
+        ├── Logs / Loki
+        ├── Traces / Tempo
+        ├── Kafka
+        ├── PostgreSQL
+        └── GitHub
+              │
+              ▼
+       SentinelOps AI
+              │
+   ┌──────────┼──────────┐
+   ▼          ▼          ▼
+Incident   LogAnalyzer  Performance
+Agent      Agent        Agent
+   │          │          │
+   └──────────┼──────────┘
+              ▼
+        SecurityAgent
+              │
+          CodeAgent
+              │
+       Spring AI / LLM
+              │
+      Tool Calling / MCP
+              │
+        Policy Engine
+              │
+      Human Approval
+              │
+     Controlled Actions
 ```
 
-## 🤖 AI Agents
+## 🤖 Agentes planejados
 
-| Agente | Responsabilidade |
+| Agente | Papel |
 |---|---|
-| **IncidentAgent** | Coordena a investigação e consolida evidências |
-| **LogAnalyzerAgent** | Analisa logs, exceções e padrões anormais |
-| **PerformanceAgent** | Investiga latência, CPU, memória, JVM e banco |
-| **SecurityAgent** | Identifica riscos, anomalias e configurações suspeitas |
-| **CodeAgent** | Relaciona incidentes a commits/PRs e propõe correções |
-
-Na **v0.1**, o `IncidentAgent` já possui um fluxo determinístico de investigação. A integração real com LLM e ferramentas será adicionada progressivamente para evitar autonomia prematura.
-
----
+| **IncidentAgent** | Implementado inicialmente; coordena a investigação determinística |
+| **LogAnalyzerAgent** | Roadmap: análise de logs, exceções e padrões |
+| **PerformanceAgent** | Roadmap: latência, CPU, memória, JVM e banco |
+| **SecurityAgent** | Roadmap: riscos, anomalias e configurações |
+| **CodeAgent** | Roadmap: correlação com commits/PRs e propostas de correção |
 
 ## ⚙️ Stack
 
-### Backend
-- Java 21
-- Spring Boot 3.5.5
-- Spring Web
-- Spring Data JPA
-- Bean Validation
-- Spring Boot Actuator
-- JUnit 5
+**Backend:** Java 21, Spring Boot 3.5.5, Spring Web, Spring Data JPA, Bean Validation, Actuator.
 
-### Dados
-- PostgreSQL 17
-- H2 para desenvolvimento inicial
-- Redis *(roadmap)*
-- Kafka *(roadmap)*
+**Dados:** PostgreSQL 17, Flyway.
 
-### Observabilidade
-- Prometheus *(roadmap)*
-- Grafana *(roadmap)*
-- Loki *(roadmap)*
-- Tempo *(roadmap)*
+**Qualidade:** JUnit 5, JaCoCo. A cobertura automatizada ainda está sendo expandida.
 
-### AI & Governance
-- Spring AI *(roadmap)*
-- LLM integration *(roadmap)*
-- Tool Calling / MCP *(roadmap)*
-- RAG para runbooks *(roadmap)*
-- Policy Engine *(roadmap)*
-- Human-in-the-Loop *(roadmap)*
+**API:** OpenAPI / Swagger via springdoc.
 
-### Cloud & DevOps
-- Docker
-- Kubernetes *(roadmap)*
-- AWS *(roadmap)*
-- GitHub Actions *(roadmap)*
+**Infra local:** Docker + Docker Compose.
 
----
+**Roadmap:** Prometheus, Grafana, Loki, Tempo, Kafka, Redis, Spring AI, LLM, Tool Calling/MCP, RAG, Kubernetes e AWS.
 
-## 🚀 MVP v0.1
+## 🚀 Executando localmente
 
-O primeiro incremento implementa o núcleo do domínio de incidentes.
+Pré-requisitos: JDK 21+, Maven e Docker Desktop.
 
-### Endpoints
+### 1. Suba o PostgreSQL
 
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `POST` | `/api/v1/incidents` | Registra um incidente |
-| `GET` | `/api/v1/incidents` | Lista incidentes |
-| `POST` | `/api/v1/incidents/{id}/investigate` | Executa investigação inicial |
-| `GET` | `/api/v1/dashboard/summary` | Resumo operacional |
-| `GET` | `/actuator/health` | Health check |
-
-### Exemplo de incidente
-
-```json
-{
-  "serviceName": "payment-service",
-  "description": "Latência subiu de 300ms para 2400ms e existem timeouts no PostgreSQL",
-  "severity": "CRITICAL"
-}
+```bash
+docker compose up -d
 ```
 
-A investigação retorna uma estrutura semelhante a:
+O container usa internamente a porta `5432` e publica o banco do SentinelOps em:
 
-```json
-{
-  "probableCause": "Possível degradação de dependência ou saturação de recursos",
-  "evidence": [
-    "Incidente recebido do serviço payment-service",
-    "Severidade classificada como CRITICAL"
-  ],
-  "recommendations": [
-    "Consultar métricas do Prometheus",
-    "Correlacionar logs no Loki",
-    "Inspecionar traces no Tempo",
-    "Verificar deploys e commits recentes"
-  ],
-  "humanApprovalRequired": true
-}
+```text
+localhost:5433
 ```
 
----
+Isso evita conflito com uma instalação PostgreSQL local que já utilize `5432`.
 
-## ▶️ Executando localmente
+### 2. Execute os testes
 
-### Pré-requisitos
+```bash
+mvn clean test
+```
 
-- JDK 21+
-- Maven 3.9+
-- IntelliJ IDEA ou IDE compatível
-- Docker Desktop para PostgreSQL
-
-### Execução rápida
+### 3. Inicie a aplicação
 
 ```bash
 mvn spring-boot:run
 ```
 
-Depois:
+### 4. Verifique a saúde
 
 ```text
-http://localhost:8080/actuator/health
+GET http://localhost:8080/actuator/health
 ```
 
 Resposta esperada:
@@ -216,143 +135,125 @@ Resposta esperada:
 {"status":"UP"}
 ```
 
-Por padrão, o MVP pode utilizar **H2 em memória**, permitindo iniciar o projeto sem infraestrutura externa.
+Swagger UI:
 
----
+```text
+http://localhost:8080/swagger-ui.html
+```
 
-## 🧪 Testando no PowerShell
+## 🔌 Endpoints atuais
 
-### Criar incidente
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `POST` | `/api/v1/incidents` | Cria incidente |
+| `GET` | `/api/v1/incidents` | Lista incidentes |
+| `GET` | `/api/v1/incidents/{id}` | Consulta incidente |
+| `PATCH` | `/api/v1/incidents/{id}/status` | Altera status |
+| `POST` | `/api/v1/incidents/{id}/investigate` | Executa investigação determinística |
+| `GET` | `/api/v1/dashboard/summary` | Resumo operacional |
+| `GET` | `/actuator/health` | Health check |
+
+## 🧪 Fluxo validado
+
+Criar incidente:
+
+```json
+{
+  "title": "Latência elevada no payment-service",
+  "serviceName": "payment-service",
+  "severity": "HIGH",
+  "description": "Latência da API aumentou durante processamento de pagamentos."
+}
+```
+
+Exemplo PowerShell:
 
 ```powershell
 $body = @{
-  serviceName = "payment-service"
-  description = "Latência subiu de 300ms para 2400ms e existem timeouts no PostgreSQL"
-  severity = "CRITICAL"
+    title       = "Latência elevada no payment-service"
+    serviceName = "payment-service"
+    severity    = "HIGH"
+    description = "Latência da API aumentou durante processamento de pagamentos."
 } | ConvertTo-Json
 
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "http://localhost:8080/api/v1/incidents" `
-  -ContentType "application/json" `
-  -Body $body
+$incident = Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://localhost:8080/api/v1/incidents" `
+    -ContentType "application/json" `
+    -Body $body
 ```
 
-### Investigar
-
-```powershell
-Invoke-RestMethod -Method Post `
-  http://localhost:8080/api/v1/incidents/1/investigate
-```
-
-### Dashboard
+Investigar:
 
 ```powershell
 Invoke-RestMethod `
-  http://localhost:8080/api/v1/dashboard/summary
+    -Method Post `
+    -Uri "http://localhost:8080/api/v1/incidents/$($incident.id)/investigate"
 ```
 
----
+A implementação atual retorna uma causa provável, evidências, recomendações e exige aprovação humana. O incidente passa para `INVESTIGATING`.
+
+Dashboard:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/v1/dashboard/summary"
+```
+
+## 🗃️ Banco e migrações
+
+A aplicação utiliza PostgreSQL como banco padrão:
+
+```text
+jdbc:postgresql://localhost:5433/sentinelops
+```
+
+Configurações podem ser sobrescritas por:
+
+- `DB_URL`
+- `DB_USER`
+- `DB_PASSWORD`
+
+A estrutura inicial é criada pelo Flyway:
+
+```text
+V1__create_incidents.sql
+```
+
+O Hibernate está configurado com `ddl-auto=validate`, mantendo o versionamento de schema sob responsabilidade das migrations.
 
 ## 🗺️ Roadmap
 
-### ✅ v0.1 — Foundation
-- domínio de incidentes;
-- REST API;
-- `IncidentAgent`;
-- investigação determinística;
-- JPA;
-- Actuator;
-- testes iniciais.
+**v0.2 — Foundation API:** PostgreSQL, Flyway, DTOs, validação, ProblemDetail, Swagger, Actuator e agente determinístico. Em andamento: ampliar testes automatizados e CI.
 
-### 🔨 v0.2 — Production-ready API
-- PostgreSQL;
-- Flyway;
-- DTOs;
-- ProblemDetail + `@RestControllerAdvice`;
-- OpenAPI / Swagger;
-- testes unitários e integração;
-- dashboard web inicial.
+**v0.3 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, `LogAnalyzerAgent` e `PerformanceAgent`.
 
-### 📊 v0.3 — Observability Intelligence
-- Prometheus;
-- Grafana;
-- Loki;
-- Tempo;
-- `LogAnalyzerAgent`;
-- `PerformanceAgent`;
-- correlação real de telemetria.
+**v0.4 — Agentic AI:** Spring AI, integração LLM, Tool Calling/MCP, RAG para runbooks e memória de incidentes.
 
-### 🧠 v0.4 — Agentic AI
-- Spring AI;
-- integração com LLM;
-- Tool Calling;
-- MCP;
-- RAG para runbooks;
-- memória de incidentes.
+**v0.5 — Governance & Security:** `SecurityAgent`, Policy Engine, Human-in-the-Loop, auditoria e integração controlada com GitHub.
 
-### 🛡️ v0.5 — Governance
-- Policy Engine;
-- Human-in-the-Loop;
-- trilha de auditoria;
-- integração GitHub;
-- geração controlada de Pull Requests.
+**v1.0 — Cloud-native:** Kafka, Redis, Kubernetes, AWS, `CodeAgent`, CI/CD avançado e testes de resiliência.
 
-### 🚀 v1.0 — Cloud-native
-- Kafka;
-- Redis;
-- Kubernetes;
-- AWS;
-- `SecurityAgent`;
-- `CodeAgent`;
-- CI/CD;
-- observabilidade completa;
-- testes de resiliência.
+## 🔐 Segurança e governança
 
----
+Nenhuma ação crítica deve depender exclusivamente da decisão de um LLM.
 
-## 🔐 Princípios de segurança
+A evolução do projeto seguirá princípios de least privilege, ferramentas explicitamente autorizadas, validação de parâmetros, separação entre recomendação e execução, aprovação humana para operações sensíveis e trilha de auditoria.
 
-O SentinelOps AI segue um princípio central:
-
-> **Nenhuma ação crítica deve depender exclusivamente da decisão de um LLM.**
-
-A arquitetura evoluirá com:
-- least privilege;
-- ferramentas explicitamente autorizadas;
-- validação de parâmetros;
-- Policy Engine;
-- aprovação humana para operações sensíveis;
-- auditoria de decisões e execuções;
-- separação entre **sugerir** e **executar**.
-
----
+Credenciais reais não devem ser commitadas no repositório. Para ambientes além do desenvolvimento local, use secrets e variáveis de ambiente.
 
 ## 📈 Objetivo de engenharia
 
-Este projeto não pretende ser apenas uma demonstração de chatbot.
-
-O objetivo é explorar como **agentes de IA podem participar de operações reais de software sem abandonar fundamentos de engenharia**, como segurança, observabilidade, resiliência, testes, rastreabilidade e governança.
+O objetivo é explorar como agentes de IA podem participar de operações de software sem abandonar fundamentos de engenharia:
 
 ```text
 Observe → Detect → Investigate → Correlate → Recommend → Approve → Act → Learn
 ```
 
----
-
 ## 👨‍💻 Autor
 
 **Jucelio Farias Coelho**
 
-Desenvolvimento Backend • Java • Spring Boot • Dados • Cloud • AI Engineering
-
----
-
-## ⭐ Projeto em evolução
-
-O SentinelOps AI será desenvolvido incrementalmente, com cada versão adicionando capacidade operacional e mantendo decisões arquiteturais documentadas.
-
-Se o projeto for útil como referência de **Java + Observability + Agentic AI**, considere deixar uma ⭐ no repositório.
+Java Backend • Spring Boot • Dados • Cloud • AI Engineering
 
 ---
 
