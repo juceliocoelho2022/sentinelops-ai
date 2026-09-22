@@ -385,3 +385,12 @@ Java Backend • Spring Boot • Dados • Cloud • AI Engineering
 ---
 
 **SentinelOps AI — Build reliable systems. Empower people.**
+
+
+### Runtime diagnostics dashboard (v0.4)
+
+The observability stack includes a provisioned Grafana dashboard backed by Prometheus. It is intentionally diagnostic: availability, HTTP request volume and 5xx errors, JVM heap/CPU/threads, and HikariCP connection pressure.
+
+Local validation: run `docker compose up -d` and the Spring Boot application on port 8080. Prometheus scrapes `/actuator/prometheus`; Grafana is exposed on port 3000.
+
+> Security note: local Grafana credentials are development-only. Production must use secret management and network-level protection for management and metrics endpoints.
