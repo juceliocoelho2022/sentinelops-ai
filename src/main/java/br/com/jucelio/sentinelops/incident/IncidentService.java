@@ -7,6 +7,8 @@ import br.com.jucelio.sentinelops.incident.api.IncidentRequest;
 import br.com.jucelio.sentinelops.incident.api.IncidentResponse;
 import br.com.jucelio.sentinelops.security.SecurityAgent;
 import br.com.jucelio.sentinelops.security.SecurityFinding;
+import br.com.jucelio.sentinelops.policy.PolicyEngine;
+import br.com.jucelio.sentinelops.policy.PolicyEvaluation;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +19,13 @@ public class IncidentService {
     private final IncidentRepository repository;
     private final IncidentAgent agent;
     private final SecurityAgent securityAgent;
+    private final PolicyEngine policyEngine;
 
-    public IncidentService(IncidentRepository repository, IncidentAgent agent, SecurityAgent securityAgent) {
+    public IncidentService(IncidentRepository repository, IncidentAgent agent, SecurityAgent securityAgent, PolicyEngine policyEngine) {
         this.repository = repository;
         this.agent = agent;
         this.securityAgent = securityAgent;
+        this.policyEngine = policyEngine;
     }
 
     @Transactional
@@ -55,10 +59,9 @@ public class IncidentService {
         InvestigationResult incidentAnalysis = agent.investigate(incident);
         SecurityFinding securityAnalysis = securityAgent.analyze(incident);
 
-        boolean approvalRequired =
-                incidentAnalysis.humanApprovalRequired() || securityAnalysis.humanApprovalRequired();
+        PolicyEvaluation policyEvaluation = policyEngine.evaluate(incidentAnalysis, securityAnalysis);
 
-        return new IncidentInvestigation(incidentAnalysis, securityAnalysis, approvalRequired);
+        return new IncidentInvestigation(incidentAnalysis, securityAnalysis, policyEvaluation);
     }
 
     private Incident get(Long id) {
