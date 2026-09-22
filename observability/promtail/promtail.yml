@@ -30,6 +30,9 @@ scrape_configs:
             level: level
             logger: logger_name
             application: application
+            traceId: traceId
+            spanId: spanId
       - labels:
           level:
           application:
+          traceId:
