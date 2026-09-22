@@ -1,44 +1,36 @@
 package br.com.jucelio.sentinelops.security;
 
-import br.com.jucelio.sentinelops.approval.ApprovalService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@WebMvcTest
-@Import(SecurityConfig.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ActuatorSecurityTest {
 
     @Autowired
-    private MockMvc mockMvc;
+    private TestRestTemplate restTemplate;
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
 
-    @MockitoBean
-    private ApprovalService approvalService;
-
     @Test
-    void shouldNotRequireJwtForPrometheusScrapePath() throws Exception {
-        mockMvc.perform(get("/actuator/prometheus"))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    if (status == 401 || status == 403) {
-                        throw new AssertionError("Prometheus scrape path must not require JWT");
-                    }
-                });
+    void shouldAllowPrometheusScrapeWithoutJwt() {
+        var response = restTemplate.getForEntity("/actuator/prometheus", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).contains("# HELP");
     }
 
     @Test
-    void shouldRequireAuthenticationForOtherActuatorPaths() throws Exception {
-        mockMvc.perform(get("/actuator/metrics"))
-                .andExpect(status().isUnauthorized());
+    void shouldRequireAuthenticationForOtherActuatorPaths() {
+        var response = restTemplate.getForEntity("/actuator/metrics", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
