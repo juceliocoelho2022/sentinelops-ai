@@ -1,4 +1,17 @@
 services:
+  app:
+    build: .
+    container_name: sentinelops-app
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sentinelops
+      DB_USER: sentinelops
+      DB_PASSWORD: sentinelops
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     container_name: sentinelops-postgres
@@ -22,8 +35,6 @@ services:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
