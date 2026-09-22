@@ -7,10 +7,10 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-CI%20validated-2496ED?logo=docker&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
-![Status](https://img.shields.io/badge/status-v0.3-blue)
+![Status](https://img.shields.io/badge/status-v0.3.2-blue)
 [![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
-**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A versão 0.3 combina agentes determinísticos, avaliação de políticas, decisão humana auditável, persistência PostgreSQL, testes de integração e CI/CD.
+**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A versão 0.3.2 combina agentes determinísticos, Policy Enforcement persistido, autenticação JWT, autorização por scope, decisão humana auditável, PostgreSQL, testes de integração e CI/CD.
 
 ## 💼 O que este projeto demonstra
 
@@ -21,7 +21,8 @@ Para avaliação técnica e recrutamento, este repositório demonstra competênc
 - **Dados:** PostgreSQL 17, Spring Data JPA/Hibernate, migrations com Flyway e integridade referencial.
 - **Testes:** JUnit 5, Mockito, MockMvc, Testcontainers com PostgreSQL real e JaCoCo.
 - **DevOps:** Docker, Docker Compose e GitHub Actions com build, testes e validação da imagem.
-- **Governança de IA:** Policy Engine determinístico, Human-in-the-Loop e Audit Trail.
+- **Governança de IA:** Policy Engine determinístico, Policy Enforcement persistido, Human-in-the-Loop e Audit Trail.
+- **Segurança:** Spring Security, OAuth2 Resource Server/JWT, autorização por scope e identidade de auditoria derivada do principal autenticado.
 - **Engenharia segura:** separação explícita entre recomendação, autorização/aprovação e futura execução privilegiada.
 
 ### Cenário de negócio
@@ -46,24 +47,27 @@ ALLOW_RECOMMENDATION | REQUIRE_APPROVAL | DENY_ACTION
                       Audit Trail
 ```
 
-> A v0.3 demonstra a fundação de governança. Observabilidade real, LLMs e execução controlada aparecem separadamente no roadmap para não confundir funcionalidades atuais com futuras.
+ > A v0.3.2 demonstra a fundação de governança e o endurecimento de segurança. Observabilidade real, LLMs e execução controlada aparecem separadamente no roadmap para não confundir funcionalidades atuais com futuras.
 
 > **RECOMMEND != EXECUTE** — análise, política e aprovação são etapas distintas. Aprovação humana não executa automaticamente infraestrutura, banco, cloud ou Kubernetes.
 
-## ✅ Estado atual — v0.3
+## ✅ Estado atual — v0.3.2
 
 Implementado:
 
 - Java 21 + Spring Boot 3.5.5
 - REST API, DTOs, Bean Validation e ProblemDetail
 - Spring Data JPA / Hibernate + PostgreSQL 17
-- Flyway V1 para incidentes e V2 para trilha de aprovação
+- Flyway V1 para incidentes, V2 para trilha de aprovação e V3 para avaliações de política
 - Actuator + OpenAPI / Swagger
 - `IncidentAgent` determinístico
 - `SecurityAgent` determinístico
 - `PolicyEngine` determinístico
 - decisões `ALLOW_RECOMMENDATION`, `REQUIRE_APPROVAL` e `DENY_ACTION`
-- Human Approval com `APPROVED` / `REJECTED`
+- Spring Security + OAuth2 Resource Server/JWT
+- autorização `incident:approve` para decisões humanas
+- Human Approval com `APPROVED` / `REJECTED` e ator derivado do JWT
+- Policy Enforcement: somente `REQUIRE_APPROVAL` aceita decisão humana; `DENY_ACTION` não pode ser sobrescrito pelo endpoint normal
 - Audit Trail persistente com ator, justificativa e timestamp
 - JUnit 5, Mockito, MockMvc, Testcontainers e JaCoCo
 - GitHub Actions com `mvn verify`
@@ -233,10 +237,11 @@ Exemplo de decisão humana:
 ```json
 {
   "decision": "APPROVED",
-  "decidedBy": "sre.lead",
   "reason": "Evidence validated before remediation"
 }
 ```
+
+O ator (`decidedBy`) é obtido do principal autenticado no JWT, e não do payload enviado pelo cliente.
 
 A aprovação é registrada para auditoria, mas **não dispara execução automática**.
 
@@ -247,9 +252,10 @@ Flyway mantém o schema versionado:
 ```text
 V1__create_incidents.sql
 V2__create_approval_records.sql
+V3__create_policy_evaluations.sql
 ```
 
-A tabela `approval_records` mantém vínculo por foreign key com `incidents` e registra decisão, ator, justificativa e instante da decisão.
+A tabela `approval_records` mantém vínculo por foreign key com `incidents` e registra decisão, ator, justificativa e instante da decisão. `policy_evaluations` persiste a decisão determinística usada para aplicar a regra de aprovação.
 
 O Hibernate utiliza `ddl-auto=validate`, mantendo alterações de schema sob responsabilidade das migrations.
 
@@ -295,7 +301,7 @@ Java 21
    ↓
 mvn verify
    ↓
-Unit / MockMvc / Integration Tests
+Unit / MockMvc / Security Authorization / Integration Tests
    ↓
 Testcontainers + PostgreSQL
    ↓
@@ -311,6 +317,8 @@ Isso valida tanto o artefato Java quanto a capacidade de gerar a imagem de conta
 **v0.2.1 — Quality & CI:** persistência PostgreSQL, Flyway, validação, ProblemDetail, testes, Testcontainers e CI.
 
 **v0.3 — Governance Foundation:** SecurityAgent, pipeline de investigação, Policy Engine, Human Approval, Audit Trail e validação da imagem Docker no CI.
+
+**v0.3.2 — Security & Governance Hardening:** JWT, autorização por scope, identidade autenticada no Audit Trail, persistência da PolicyEvaluation, enforcement de `REQUIRE_APPROVAL` e bloqueio de `DENY_ACTION`.
 
 **v0.4 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, LogAnalyzerAgent e PerformanceAgent.
 
@@ -328,7 +336,7 @@ O projeto adota uma separação explícita entre:
 ANALYZE → RECOMMEND → POLICY → APPROVE → AUDIT → EXECUTE
 ```
 
-Na v0.3, o fluxo termina em **AUDIT**.
+Na v0.3.2, o fluxo termina em **AUDIT**. A aprovação exige JWT com `incident:approve`, e o backend também valida a decisão persistida do Policy Engine antes de aceitar a decisão humana.
 
 A futura etapa `EXECUTE` deverá usar least privilege, ferramentas explicitamente autorizadas, validação de parâmetros, autorização independente do LLM, idempotência, limites operacionais e trilha completa de auditoria.
 
