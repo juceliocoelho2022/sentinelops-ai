@@ -1,9 +1,12 @@
 package br.com.jucelio.sentinelops.incident.api;
 
+import br.com.jucelio.sentinelops.agent.IncidentInvestigation;
 import br.com.jucelio.sentinelops.agent.InvestigationResult;
 import br.com.jucelio.sentinelops.incident.IncidentService;
 import br.com.jucelio.sentinelops.incident.IncidentStatus;
 import br.com.jucelio.sentinelops.incident.Severity;
+import br.com.jucelio.sentinelops.security.SecurityFinding;
+import br.com.jucelio.sentinelops.security.SecurityRiskLevel;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,17 +54,25 @@ class IncidentControllerTest {
     }
 
     @Test
-    void shouldInvestigateIncident() throws Exception {
-        InvestigationResult result = new InvestigationResult(
-                "Dependency degradation",
-                List.of("timeout"),
-                List.of("inspect metrics"),
+    void shouldReturnCombinedInvestigationPipeline() throws Exception {
+        InvestigationResult incidentAnalysis = new InvestigationResult(
+                "Dependency degradation", List.of("timeout"), List.of("inspect metrics"), false);
+        SecurityFinding securityAnalysis = new SecurityFinding(
+                SecurityRiskLevel.CRITICAL,
+                "INCIDENT_SECURITY_REVIEW",
+                "Critical security review",
+                List.of("authorization failures"),
+                List.of("require human approval"),
                 true);
+        IncidentInvestigation result = new IncidentInvestigation(
+                incidentAnalysis, securityAnalysis, true);
+
         when(service.investigate(1L)).thenReturn(result);
 
         mockMvc.perform(post("/api/v1/incidents/1/investigate"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.probableCause").value("Dependency degradation"))
+                .andExpect(jsonPath("$.incidentAnalysis.probableCause").value("Dependency degradation"))
+                .andExpect(jsonPath("$.securityAnalysis.riskLevel").value("CRITICAL"))
                 .andExpect(jsonPath("$.humanApprovalRequired").value(true));
     }
 }
