@@ -21,7 +21,7 @@ public class ApprovalService {
     }
 
     @Transactional
-    public ApprovalResponse decide(Long incidentId, ApprovalRequest request) {
+    public ApprovalResponse decide(Long incidentId, ApprovalRequest request, String authenticatedActor) {
         if (!incidentRepository.existsById(incidentId)) {
             throw new IncidentNotFoundException(incidentId);
         }
@@ -29,7 +29,7 @@ public class ApprovalService {
         ApprovalRecord record = new ApprovalRecord(
                 incidentId,
                 request.decision(),
-                request.decidedBy(),
+                authenticatedActor,
                 request.reason()
         );
 
