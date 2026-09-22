@@ -10,7 +10,43 @@
 ![Status](https://img.shields.io/badge/status-v0.3-blue)
 [![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
-**SentinelOps AI** é uma plataforma em evolução para investigação governada de incidentes em sistemas Java. A versão 0.3 introduz análise por agentes determinísticos, avaliação de políticas e um workflow persistente de decisão humana.
+**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A versão 0.3 combina agentes determinísticos, avaliação de políticas, decisão humana auditável, persistência PostgreSQL, testes de integração e CI/CD.
+
+## 💼 O que este projeto demonstra
+
+Para avaliação técnica e recrutamento, este repositório demonstra competências aplicadas em:
+
+- **Java Backend:** Java 21, Spring Boot, REST APIs, DTOs, Bean Validation e tratamento padronizado de erros.
+- **Arquitetura e design:** separação de responsabilidades, pipeline de investigação e componentes especializados.
+- **Dados:** PostgreSQL 17, Spring Data JPA/Hibernate, migrations com Flyway e integridade referencial.
+- **Testes:** JUnit 5, Mockito, MockMvc, Testcontainers com PostgreSQL real e JaCoCo.
+- **DevOps:** Docker, Docker Compose e GitHub Actions com build, testes e validação da imagem.
+- **Governança de IA:** Policy Engine determinístico, Human-in-the-Loop e Audit Trail.
+- **Engenharia segura:** separação explícita entre recomendação, autorização/aprovação e futura execução privilegiada.
+
+### Cenário de negócio
+
+Imagine uma API Java de pagamentos apresentando degradação. O SentinelOps recebe o incidente, executa análises especializadas, classifica o risco, aplica uma política determinística e registra uma eventual decisão humana. O objetivo é reduzir o tempo de investigação sem entregar controle irrestrito da infraestrutura a um agente de IA.
+
+### Fluxo demonstrável
+
+```text
+Create Incident
+      ↓
+IncidentAgent
+      ↓
+SecurityAgent
+      ↓
+PolicyEngine
+      ↓
+ALLOW_RECOMMENDATION | REQUIRE_APPROVAL | DENY_ACTION
+                           ↓
+                    Human Approval
+                           ↓
+                      Audit Trail
+```
+
+> A v0.3 demonstra a fundação de governança. Observabilidade real, LLMs e execução controlada aparecem separadamente no roadmap para não confundir funcionalidades atuais com futuras.
 
 > **RECOMMEND != EXECUTE** — análise, política e aprovação são etapas distintas. Aprovação humana não executa automaticamente infraestrutura, banco, cloud ou Kubernetes.
 
@@ -218,6 +254,35 @@ A tabela `approval_records` mantém vínculo por foreign key com `incidents` e r
 O Hibernate utiliza `ddl-auto=validate`, mantendo alterações de schema sob responsabilidade das migrations.
 
 Configurações podem ser sobrescritas por `DB_URL`, `DB_USER` e `DB_PASSWORD`.
+
+## 🎬 Demo rápida
+
+Com a aplicação em execução, um avaliador pode percorrer o fluxo principal pela API/Swagger:
+
+```text
+1. POST /api/v1/incidents
+2. POST /api/v1/incidents/{id}/investigate
+3. Inspecionar incidentAnalysis + securityAnalysis + policyEvaluation
+4. POST /api/v1/incidents/{id}/approvals
+5. GET  /api/v1/incidents/{id}/approvals
+6. GET  /api/v1/dashboard/summary
+```
+
+Esse percurso evidencia a separação entre investigação, decisão de política e auditoria humana.
+
+## 🧠 Decisões de engenharia
+
+**Policy Engine determinístico:** decisões críticas de governança não ficam exclusivamente sob responsabilidade de um modelo probabilístico.
+
+**Human-in-the-Loop:** a aprovação é persistida como evento auditável e não representa execução automática.
+
+**Flyway + `ddl-auto=validate`:** evolução de schema é explícita, reproduzível e validada pela aplicação.
+
+**Testcontainers:** testes de integração usam PostgreSQL real em container, reduzindo diferenças entre teste e runtime.
+
+**Docker validado no CI:** o pipeline verifica não apenas o código Java, mas também se o artefato produzido gera uma imagem executável.
+
+**Roadmap honesto:** componentes ainda não implementados permanecem identificados como roadmap.
 
 ## 🧪 Qualidade e CI
 
