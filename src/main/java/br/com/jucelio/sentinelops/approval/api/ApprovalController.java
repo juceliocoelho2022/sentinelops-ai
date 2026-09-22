@@ -3,6 +3,7 @@ package br.com.jucelio.sentinelops.approval.api;
 import br.com.jucelio.sentinelops.approval.ApprovalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,9 +22,10 @@ public class ApprovalController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApprovalResponse decide(
             @PathVariable Long incidentId,
-            @Valid @RequestBody ApprovalRequest request
+            @Valid @RequestBody ApprovalRequest request,
+            Authentication authentication
     ) {
-        return service.decide(incidentId, request);
+        return service.decide(incidentId, request, authentication.getName());
     }
 
     @GetMapping
