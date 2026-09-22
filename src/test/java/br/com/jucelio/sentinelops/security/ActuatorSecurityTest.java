@@ -7,11 +7,13 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+@WebMvcTest(controllers = ActuatorSecurityTest.SecurityProbeController.class)
 @Import(SecurityConfig.class)
 class ActuatorSecurityTest {
 
@@ -36,5 +38,18 @@ class ActuatorSecurityTest {
     void shouldRequireAuthenticationForOtherActuatorPaths() throws Exception {
         mockMvc.perform(get("/actuator/metrics"))
                 .andExpect(status().isUnauthorized());
+    }
+    @RestController
+    static class SecurityProbeController {
+
+        @GetMapping("/actuator/prometheus")
+        String prometheus() {
+            return "prometheus-probe";
+        }
+
+        @GetMapping("/actuator/metrics")
+        String metrics() {
+            return "metrics-probe";
+        }
     }
 }
