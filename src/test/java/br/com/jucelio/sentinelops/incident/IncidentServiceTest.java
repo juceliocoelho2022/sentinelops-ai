@@ -1,9 +1,13 @@
 package br.com.jucelio.sentinelops.incident;
 
 import br.com.jucelio.sentinelops.agent.IncidentAgent;
+import br.com.jucelio.sentinelops.agent.IncidentInvestigation;
 import br.com.jucelio.sentinelops.agent.InvestigationResult;
 import br.com.jucelio.sentinelops.incident.api.IncidentRequest;
 import br.com.jucelio.sentinelops.incident.api.IncidentResponse;
+import br.com.jucelio.sentinelops.security.SecurityAgent;
+import br.com.jucelio.sentinelops.security.SecurityFinding;
+import br.com.jucelio.sentinelops.security.SecurityRiskLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,12 +27,13 @@ class IncidentServiceTest {
 
     @Mock IncidentRepository repository;
     @Mock IncidentAgent agent;
+    @Mock SecurityAgent securityAgent;
 
     private IncidentService service;
 
     @BeforeEach
     void setUp() {
-        service = new IncidentService(repository, agent);
+        service = new IncidentService(repository, agent, securityAgent);
     }
 
     @Test
@@ -47,19 +52,30 @@ class IncidentServiceTest {
     }
 
     @Test
-    void shouldMoveIncidentToInvestigatingBeforeAgentRuns() {
+    void shouldRunIncidentAndSecurityAnalysisAsOnePipeline() {
         Incident incident = new Incident("High latency", "Timeouts", "payment-service", Severity.CRITICAL);
-        InvestigationResult result = new InvestigationResult(
-                "Dependency degradation", List.of("timeout"), List.of("inspect metrics"), true);
+        InvestigationResult incidentResult = new InvestigationResult(
+                "Dependency degradation", List.of("timeout"), List.of("inspect metrics"), false);
+        SecurityFinding securityFinding = new SecurityFinding(
+                SecurityRiskLevel.CRITICAL,
+                "INCIDENT_SECURITY_REVIEW",
+                "Critical security review",
+                List.of("authorization failures"),
+                List.of("require human approval"),
+                true);
 
         when(repository.findById(1L)).thenReturn(Optional.of(incident));
-        when(agent.investigate(incident)).thenReturn(result);
+        when(agent.investigate(incident)).thenReturn(incidentResult);
+        when(securityAgent.analyze(incident)).thenReturn(securityFinding);
 
-        InvestigationResult actual = service.investigate(1L);
+        IncidentInvestigation actual = service.investigate(1L);
 
         assertThat(incident.getStatus()).isEqualTo(IncidentStatus.INVESTIGATING);
+        assertThat(actual.incidentAnalysis()).isEqualTo(incidentResult);
+        assertThat(actual.securityAnalysis()).isEqualTo(securityFinding);
         assertThat(actual.humanApprovalRequired()).isTrue();
         verify(agent).investigate(incident);
+        verify(securityAgent).analyze(incident);
     }
 
     @Test
