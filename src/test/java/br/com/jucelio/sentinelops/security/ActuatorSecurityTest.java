@@ -1,8 +1,8 @@
 package br.com.jucelio.sentinelops.security;
 
+import br.com.jucelio.sentinelops.approval.ApprovalService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(excludeAutoConfiguration = ManagementWebSecurityAutoConfiguration.class)
+@WebMvcTest
 @Import(SecurityConfig.class)
 class ActuatorSecurityTest {
 
@@ -21,6 +21,9 @@ class ActuatorSecurityTest {
 
     @MockitoBean
     private JwtDecoder jwtDecoder;
+
+    @MockitoBean
+    private ApprovalService approvalService;
 
     @Test
     void shouldNotRequireJwtForPrometheusScrapePath() throws Exception {
