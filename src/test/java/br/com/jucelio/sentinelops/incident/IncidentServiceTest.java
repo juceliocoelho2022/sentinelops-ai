@@ -32,12 +32,13 @@ class IncidentServiceTest {
     @Mock IncidentAgent agent;
     @Mock SecurityAgent securityAgent;
     @Mock PolicyEngine policyEngine;
+    @Mock br.com.jucelio.sentinelops.policy.PolicyEvaluationRepository policyEvaluationRepository;
 
     private IncidentService service;
 
     @BeforeEach
     void setUp() {
-        service = new IncidentService(repository, agent, securityAgent, policyEngine);
+        service = new IncidentService(repository, agent, securityAgent, policyEngine, policyEvaluationRepository);
     }
 
     @Test
@@ -83,6 +84,7 @@ class IncidentServiceTest {
         verify(agent).investigate(incident);
         verify(securityAgent).analyze(incident);
         verify(policyEngine).evaluate(incidentResult, securityFinding);
+        verify(policyEvaluationRepository).save(any(br.com.jucelio.sentinelops.policy.PolicyEvaluationRecord.class));
     }
 
     @Test
