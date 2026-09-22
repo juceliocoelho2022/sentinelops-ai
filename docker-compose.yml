@@ -1,4 +1,17 @@
 services:
+  app:
+    build: .
+    container_name: sentinelops-app
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/sentinelops
+      DB_USER: sentinelops
+      DB_PASSWORD: sentinelops
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:17-alpine
     container_name: sentinelops-postgres
@@ -22,8 +35,6 @@ services:
       - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,6 +53,26 @@ services:
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+
+
+  loki:
+    image: grafana/loki:3.5.5
+    container_name: sentinelops-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./observability/loki/loki.yml:/etc/loki/local-config.yaml:ro
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:3.5.5
+    container_name: sentinelops-promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observability/promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - loki
 
 volumes:
   sentinelops_pgdata:
