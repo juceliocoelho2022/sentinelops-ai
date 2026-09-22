@@ -1,3 +1,42 @@
 package br.com.jucelio.sentinelops.api;
-import br.com.jucelio.sentinelops.incident.IncidentNotFoundException;import org.springframework.http.*;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.web.bind.annotation.*;import java.net.URI;import java.util.Map;import java.util.stream.Collectors;
-@RestControllerAdvice public class GlobalExceptionHandler{@ExceptionHandler(IncidentNotFoundException.class) ProblemDetail notFound(IncidentNotFoundException ex){ProblemDetail p=ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,ex.getMessage());p.setTitle("Incident not found");p.setType(URI.create("urn:sentinelops:error:incident-not-found"));return p;}@ExceptionHandler(MethodArgumentNotValidException.class) ProblemDetail validation(MethodArgumentNotValidException ex){ProblemDetail p=ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,"Request validation failed");p.setTitle("Invalid request");Map<String,String> errors=ex.getBindingResult().getFieldErrors().stream().collect(Collectors.toMap(e->e.getField(),e->e.getDefaultMessage()==null?"invalid":e.getDefaultMessage(),(a,b)->a));p.setProperty("errors",errors);return p;}}
+
+import br.com.jucelio.sentinelops.approval.ApprovalNotAllowedException;
+import br.com.jucelio.sentinelops.incident.IncidentNotFoundException;
+import org.springframework.http.*;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(IncidentNotFoundException.class)
+    ProblemDetail notFound(IncidentNotFoundException ex) {
+        ProblemDetail p = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        p.setTitle("Incident not found");
+        p.setType(URI.create("urn:sentinelops:error:incident-not-found"));
+        return p;
+    }
+
+    @ExceptionHandler(ApprovalNotAllowedException.class)
+    ProblemDetail approvalNotAllowed(ApprovalNotAllowedException ex) {
+        ProblemDetail p = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        p.setTitle("Approval not allowed");
+        p.setType(URI.create("urn:sentinelops:error:approval-not-allowed"));
+        return p;
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    ProblemDetail validation(MethodArgumentNotValidException ex) {
+        ProblemDetail p = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Request validation failed");
+        p.setTitle("Invalid request");
+        Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(e -> e.getField(),
+                        e -> e.getDefaultMessage() == null ? "invalid" : e.getDefaultMessage(), (a, b) -> a));
+        p.setProperty("errors", errors);
+        return p;
+    }
+}

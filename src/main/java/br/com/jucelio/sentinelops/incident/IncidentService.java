@@ -9,6 +9,8 @@ import br.com.jucelio.sentinelops.security.SecurityAgent;
 import br.com.jucelio.sentinelops.security.SecurityFinding;
 import br.com.jucelio.sentinelops.policy.PolicyEngine;
 import br.com.jucelio.sentinelops.policy.PolicyEvaluation;
+import br.com.jucelio.sentinelops.policy.PolicyEvaluationRecord;
+import br.com.jucelio.sentinelops.policy.PolicyEvaluationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +22,15 @@ public class IncidentService {
     private final IncidentAgent agent;
     private final SecurityAgent securityAgent;
     private final PolicyEngine policyEngine;
+    private final PolicyEvaluationRepository policyEvaluationRepository;
 
-    public IncidentService(IncidentRepository repository, IncidentAgent agent, SecurityAgent securityAgent, PolicyEngine policyEngine) {
+    public IncidentService(IncidentRepository repository, IncidentAgent agent, SecurityAgent securityAgent,
+                           PolicyEngine policyEngine, PolicyEvaluationRepository policyEvaluationRepository) {
         this.repository = repository;
         this.agent = agent;
         this.securityAgent = securityAgent;
         this.policyEngine = policyEngine;
+        this.policyEvaluationRepository = policyEvaluationRepository;
     }
 
     @Transactional
@@ -60,6 +65,8 @@ public class IncidentService {
         SecurityFinding securityAnalysis = securityAgent.analyze(incident);
 
         PolicyEvaluation policyEvaluation = policyEngine.evaluate(incidentAnalysis, securityAnalysis);
+        policyEvaluationRepository.save(new PolicyEvaluationRecord(
+                id, policyEvaluation.decision(), String.join("; ", policyEvaluation.reasons())));
 
         return new IncidentInvestigation(incidentAnalysis, securityAnalysis, policyEvaluation);
     }
