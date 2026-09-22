@@ -8,6 +8,9 @@ import br.com.jucelio.sentinelops.incident.api.IncidentResponse;
 import br.com.jucelio.sentinelops.security.SecurityAgent;
 import br.com.jucelio.sentinelops.security.SecurityFinding;
 import br.com.jucelio.sentinelops.security.SecurityRiskLevel;
+import br.com.jucelio.sentinelops.policy.PolicyEngine;
+import br.com.jucelio.sentinelops.policy.PolicyEvaluation;
+import br.com.jucelio.sentinelops.policy.PolicyDecision;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,12 +31,13 @@ class IncidentServiceTest {
     @Mock IncidentRepository repository;
     @Mock IncidentAgent agent;
     @Mock SecurityAgent securityAgent;
+    @Mock PolicyEngine policyEngine;
 
     private IncidentService service;
 
     @BeforeEach
     void setUp() {
-        service = new IncidentService(repository, agent, securityAgent);
+        service = new IncidentService(repository, agent, securityAgent, policyEngine);
     }
 
     @Test
@@ -67,15 +71,18 @@ class IncidentServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(incident));
         when(agent.investigate(incident)).thenReturn(incidentResult);
         when(securityAgent.analyze(incident)).thenReturn(securityFinding);
+        when(policyEngine.evaluate(incidentResult, securityFinding))
+                .thenReturn(new PolicyEvaluation(PolicyDecision.DENY_ACTION, List.of("critical risk")));
 
         IncidentInvestigation actual = service.investigate(1L);
 
         assertThat(incident.getStatus()).isEqualTo(IncidentStatus.INVESTIGATING);
         assertThat(actual.incidentAnalysis()).isEqualTo(incidentResult);
         assertThat(actual.securityAnalysis()).isEqualTo(securityFinding);
-        assertThat(actual.humanApprovalRequired()).isTrue();
+        assertThat(actual.policyEvaluation().decision()).isEqualTo(PolicyDecision.DENY_ACTION);
         verify(agent).investigate(incident);
         verify(securityAgent).analyze(incident);
+        verify(policyEngine).evaluate(incidentResult, securityFinding);
     }
 
     @Test
