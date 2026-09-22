@@ -7,13 +7,14 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
-![Status](https://img.shields.io/badge/status-v0.2-blue)
+![Status](https://img.shields.io/badge/status-v0.2.1-blue)
+[![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
 **SentinelOps AI** é uma plataforma em evolução para investigação governada de incidentes em sistemas Java. O projeto combina fundamentos de backend, persistência, observabilidade e uma arquitetura alvo de agentes especializados.
 
 > **RECOMMEND != EXECUTE** — a IA investiga e recomenda; ações críticas devem permanecer sob políticas determinísticas, autorização, aprovação humana e auditoria.
 
-## ✅ Estado atual — v0.2
+## ✅ Estado atual — v0.2.1
 
 Implementado e validado localmente:
 
@@ -28,7 +29,9 @@ Implementado e validado localmente:
 - `IncidentAgent` determinístico
 - transição de incidente para `INVESTIGATING`
 - resumo operacional do dashboard
-- JUnit 5 + JaCoCo (suíte inicial)
+- JUnit 5 + Mockito + MockMvc + JaCoCo
+- Testcontainers com PostgreSQL 17 para integração
+- GitHub Actions executando `mvn verify` em push e pull request
 
 A integração com Prometheus, Loki, Tempo, LLMs e demais agentes permanece no roadmap; o README não apresenta essas capacidades como já implementadas.
 
@@ -85,7 +88,7 @@ Agent      Agent        Agent
 
 **Dados:** PostgreSQL 17, Flyway.
 
-**Qualidade:** JUnit 5, JaCoCo. A cobertura automatizada ainda está sendo expandida.
+**Qualidade:** JUnit 5, Mockito, MockMvc, Testcontainers e JaCoCo. GitHub Actions executa `mvn verify` em push e pull request.
 
 **API:** OpenAPI / Swagger via springdoc.
 
@@ -223,7 +226,7 @@ O Hibernate está configurado com `ddl-auto=validate`, mantendo o versionamento 
 
 ## 🗺️ Roadmap
 
-**v0.2 — Foundation API:** PostgreSQL, Flyway, DTOs, validação, ProblemDetail, Swagger, Actuator e agente determinístico. Em andamento: ampliar testes automatizados e CI.
+**v0.2.1 — Quality & CI:** PostgreSQL, Flyway, DTOs, validação, ProblemDetail, Swagger, Actuator, agente determinístico, testes unitários/MockMvc, integração PostgreSQL com Testcontainers e CI com GitHub Actions.
 
 **v0.3 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, `LogAnalyzerAgent` e `PerformanceAgent`.
 
