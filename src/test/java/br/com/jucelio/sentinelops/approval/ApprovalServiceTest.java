@@ -34,7 +34,8 @@ class ApprovalServiceTest {
 
         ApprovalResponse response = service.decide(
                 10L,
-                new ApprovalRequest(ApprovalDecision.APPROVED, "sre.lead", "Validated evidence")
+                new ApprovalRequest(ApprovalDecision.APPROVED, "Validated evidence"),
+                "sre.lead"
         );
 
         ArgumentCaptor<ApprovalRecord> captor = ArgumentCaptor.forClass(ApprovalRecord.class);
