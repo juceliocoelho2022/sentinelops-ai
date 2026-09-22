@@ -28,5 +28,20 @@ services:
       postgres:
         condition: service_healthy
 
+  grafana:
+    image: grafana/grafana:12.2.0
+    container_name: sentinelops-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: sentinelops
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
 volumes:
   sentinelops_pgdata:
