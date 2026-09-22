@@ -4,5 +4,6 @@ target/
 .env
 *.pem
 *.key
+*.log
 secrets/
 application-local.yml
