@@ -2,7 +2,7 @@ spring:
   application:
     name: sentinelops-ai
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/sentinelops}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/sentinelops}
     username: ${DB_USER:sentinelops}
     password: ${DB_PASSWORD:sentinelops}
   jpa:

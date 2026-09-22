@@ -6,7 +6,7 @@ services:
       POSTGRES_DB: sentinelops
       POSTGRES_USER: sentinelops
       POSTGRES_PASSWORD: sentinelops
-    ports: ["5432:5432"]
+    ports: ["5433:5432"]
     volumes: ["sentinelops_pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sentinelops -d sentinelops"]
