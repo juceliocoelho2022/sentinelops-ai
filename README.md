@@ -1,41 +1,75 @@
 # 🛡️ SentinelOps AI
 
-> **Autonomous Incident Intelligence for Java Systems**
+> **Governed Incident Intelligence for Java Systems**
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.5-6DB33F?logo=springboot&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-CI%20validated-2496ED?logo=docker&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
-![Status](https://img.shields.io/badge/status-v0.2.1-blue)
+![Status](https://img.shields.io/badge/status-v0.3-blue)
 [![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
-**SentinelOps AI** é uma plataforma em evolução para investigação governada de incidentes em sistemas Java. O projeto combina fundamentos de backend, persistência, observabilidade e uma arquitetura alvo de agentes especializados.
+**SentinelOps AI** é uma plataforma em evolução para investigação governada de incidentes em sistemas Java. A versão 0.3 introduz análise por agentes determinísticos, avaliação de políticas e um workflow persistente de decisão humana.
 
-> **RECOMMEND != EXECUTE** — a IA investiga e recomenda; ações críticas devem permanecer sob políticas determinísticas, autorização, aprovação humana e auditoria.
+> **RECOMMEND != EXECUTE** — análise, política e aprovação são etapas distintas. Aprovação humana não executa automaticamente infraestrutura, banco, cloud ou Kubernetes.
 
-## ✅ Estado atual — v0.2.1
+## ✅ Estado atual — v0.3
 
-Implementado e validado localmente:
+Implementado:
 
 - Java 21 + Spring Boot 3.5.5
-- REST API com DTOs e Bean Validation
-- Service Layer + Spring Data JPA / Hibernate
-- PostgreSQL 17 em Docker
-- Flyway com migração versionada
-- ProblemDetail + `@RestControllerAdvice`
-- Actuator
-- OpenAPI / Swagger
+- REST API, DTOs, Bean Validation e ProblemDetail
+- Spring Data JPA / Hibernate + PostgreSQL 17
+- Flyway V1 para incidentes e V2 para trilha de aprovação
+- Actuator + OpenAPI / Swagger
 - `IncidentAgent` determinístico
-- transição de incidente para `INVESTIGATING`
-- resumo operacional do dashboard
-- JUnit 5 + Mockito + MockMvc + JaCoCo
-- Testcontainers com PostgreSQL 17 para integração
-- GitHub Actions executando `mvn verify` em push e pull request
+- `SecurityAgent` determinístico
+- `PolicyEngine` determinístico
+- decisões `ALLOW_RECOMMENDATION`, `REQUIRE_APPROVAL` e `DENY_ACTION`
+- Human Approval com `APPROVED` / `REJECTED`
+- Audit Trail persistente com ator, justificativa e timestamp
+- JUnit 5, Mockito, MockMvc, Testcontainers e JaCoCo
+- GitHub Actions com `mvn verify`
+- build da imagem Docker validado pelo CI
+- execução da aplicação como usuário não-root no container
 
-A integração com Prometheus, Loki, Tempo, LLMs e demais agentes permanece no roadmap; o README não apresenta essas capacidades como já implementadas.
+Ainda estão no roadmap: Prometheus, Grafana, Loki, Tempo, Kafka, Spring AI/LLM, MCP/Tool Calling, execução controlada, Kubernetes e AWS.
 
-## 🏗️ Arquitetura alvo
+## 🏗️ Arquitetura atual
+
+```text
+Incident
+   │
+   ▼
+IncidentService
+   │
+   ├── IncidentAgent
+   │      └── causa + evidências + recomendações
+   │
+   └── SecurityAgent
+          └── risco + evidências + recomendações
+                   │
+                   ▼
+              PolicyEngine
+                   │
+       ┌───────────┼────────────┐
+       ▼           ▼            ▼
+ALLOW_          REQUIRE_      DENY_
+RECOMMENDATION  APPROVAL      ACTION
+                   │
+                   ▼
+             Human Approval
+                   │
+             APPROVED/REJECTED
+                   │
+                   ▼
+               Audit Trail
+```
+
+Nenhuma etapa acima executa ações privilegiadas.
+
+## 🎯 Arquitetura alvo
 
 ```text
 Java / Spring Services
@@ -50,12 +84,12 @@ Java / Spring Services
               ▼
        SentinelOps AI
               │
-   ┌──────────┼──────────┐
-   ▼          ▼          ▼
-Incident   LogAnalyzer  Performance
-Agent      Agent        Agent
-   │          │          │
-   └──────────┼──────────┘
+   ┌──────────┼──────────────┐
+   ▼          ▼              ▼
+Incident   LogAnalyzer   Performance
+Agent      Agent         Agent
+   │          │              │
+   └──────────┼──────────────┘
               ▼
         SecurityAgent
               │
@@ -69,73 +103,57 @@ Agent      Agent        Agent
               │
       Human Approval
               │
+        Audit Trail
+              │
      Controlled Actions
 ```
 
-## 🤖 Agentes planejados
+## 🤖 Componentes de inteligência
 
-| Agente | Papel |
-|---|---|
-| **IncidentAgent** | Implementado inicialmente; coordena a investigação determinística |
-| **LogAnalyzerAgent** | Roadmap: análise de logs, exceções e padrões |
-| **PerformanceAgent** | Roadmap: latência, CPU, memória, JVM e banco |
-| **SecurityAgent** | Roadmap: riscos, anomalias e configurações |
-| **CodeAgent** | Roadmap: correlação com commits/PRs e propostas de correção |
+| Componente | Estado | Papel |
+|---|---|---|
+| **IncidentAgent** | Implementado | Investigação determinística inicial |
+| **SecurityAgent** | Implementado | Avaliação determinística de risco do incidente |
+| **PolicyEngine** | Implementado | Governa o resultado antes de qualquer futura ação |
+| **Human Approval** | Implementado na v0.3 | Registra aprovação/rejeição humana |
+| **LogAnalyzerAgent** | Roadmap | Logs, exceções e padrões |
+| **PerformanceAgent** | Roadmap | Latência, CPU, memória, JVM e banco |
+| **CodeAgent** | Roadmap | Commits/PRs e propostas de correção |
+| **Spring AI / LLM** | Roadmap | Raciocínio assistido sobre evidências e runbooks |
 
 ## ⚙️ Stack
 
-**Backend:** Java 21, Spring Boot 3.5.5, Spring Web, Spring Data JPA, Bean Validation, Actuator.
+**Backend:** Java 21, Spring Boot 3.5.5, Spring Web, Spring Data JPA, Bean Validation e Actuator.
 
-**Dados:** PostgreSQL 17, Flyway.
+**Dados:** PostgreSQL 17 + Flyway.
 
-**Qualidade:** JUnit 5, Mockito, MockMvc, Testcontainers e JaCoCo. GitHub Actions executa `mvn verify` em push e pull request.
+**Qualidade:** JUnit 5, Mockito, MockMvc, Testcontainers, JaCoCo e GitHub Actions.
 
 **API:** OpenAPI / Swagger via springdoc.
 
-**Infra local:** Docker + Docker Compose.
-
-**Roadmap:** Prometheus, Grafana, Loki, Tempo, Kafka, Redis, Spring AI, LLM, Tool Calling/MCP, RAG, Kubernetes e AWS.
+**Infra local:** Docker + Docker Compose. O CI também executa `docker build` para detectar incompatibilidades entre o artefato Maven e a imagem.
 
 ## 🚀 Executando localmente
 
 Pré-requisitos: JDK 21+, Maven e Docker Desktop.
 
-### 1. Suba o PostgreSQL
-
 ```bash
 docker compose up -d
-```
-
-O container usa internamente a porta `5432` e publica o banco do SentinelOps em:
-
-```text
-localhost:5433
-```
-
-Isso evita conflito com uma instalação PostgreSQL local que já utilize `5432`.
-
-### 2. Execute os testes
-
-```bash
-mvn clean test
-```
-
-### 3. Inicie a aplicação
-
-```bash
+mvn clean verify
 mvn spring-boot:run
 ```
 
-### 4. Verifique a saúde
+PostgreSQL do projeto:
+
+```text
+localhost:5433
+jdbc:postgresql://localhost:5433/sentinelops
+```
+
+Health check:
 
 ```text
 GET http://localhost:8080/actuator/health
-```
-
-Resposta esperada:
-
-```json
-{"status":"UP"}
 ```
 
 Swagger UI:
@@ -144,7 +162,7 @@ Swagger UI:
 http://localhost:8080/swagger-ui.html
 ```
 
-## 🔌 Endpoints atuais
+## 🔌 Endpoints
 
 | Método | Endpoint | Descrição |
 |---|---|---|
@@ -152,105 +170,114 @@ http://localhost:8080/swagger-ui.html
 | `GET` | `/api/v1/incidents` | Lista incidentes |
 | `GET` | `/api/v1/incidents/{id}` | Consulta incidente |
 | `PATCH` | `/api/v1/incidents/{id}/status` | Altera status |
-| `POST` | `/api/v1/incidents/{id}/investigate` | Executa investigação determinística |
+| `POST` | `/api/v1/incidents/{id}/investigate` | Executa pipeline IncidentAgent → SecurityAgent → PolicyEngine |
+| `POST` | `/api/v1/incidents/{id}/approvals` | Registra decisão humana |
+| `GET` | `/api/v1/incidents/{id}/approvals` | Consulta histórico auditável |
 | `GET` | `/api/v1/dashboard/summary` | Resumo operacional |
 | `GET` | `/actuator/health` | Health check |
 
-## 🧪 Fluxo validado
+## 🔎 Investigação governada
 
-Criar incidente:
+A investigação retorna três blocos conceituais:
+
+```text
+incidentAnalysis
+securityAnalysis
+policyEvaluation
+```
+
+O `PolicyEngine` aplica regras determinísticas:
+
+- `ALLOW_RECOMMENDATION`: análise de baixo risco pode ser apresentada como recomendação.
+- `REQUIRE_APPROVAL`: a continuidade exige decisão humana explícita.
+- `DENY_ACTION`: risco crítico bloqueia remediação autônoma.
+
+Exemplo de decisão humana:
 
 ```json
 {
-  "title": "Latência elevada no payment-service",
-  "serviceName": "payment-service",
-  "severity": "HIGH",
-  "description": "Latência da API aumentou durante processamento de pagamentos."
+  "decision": "APPROVED",
+  "decidedBy": "sre.lead",
+  "reason": "Evidence validated before remediation"
 }
 ```
 
-Exemplo PowerShell:
-
-```powershell
-$body = @{
-    title       = "Latência elevada no payment-service"
-    serviceName = "payment-service"
-    severity    = "HIGH"
-    description = "Latência da API aumentou durante processamento de pagamentos."
-} | ConvertTo-Json
-
-$incident = Invoke-RestMethod `
-    -Method Post `
-    -Uri "http://localhost:8080/api/v1/incidents" `
-    -ContentType "application/json" `
-    -Body $body
-```
-
-Investigar:
-
-```powershell
-Invoke-RestMethod `
-    -Method Post `
-    -Uri "http://localhost:8080/api/v1/incidents/$($incident.id)/investigate"
-```
-
-A implementação atual retorna uma causa provável, evidências, recomendações e exige aprovação humana. O incidente passa para `INVESTIGATING`.
-
-Dashboard:
-
-```powershell
-Invoke-RestMethod "http://localhost:8080/api/v1/dashboard/summary"
-```
+A aprovação é registrada para auditoria, mas **não dispara execução automática**.
 
 ## 🗃️ Banco e migrações
 
-A aplicação utiliza PostgreSQL como banco padrão:
-
-```text
-jdbc:postgresql://localhost:5433/sentinelops
-```
-
-Configurações podem ser sobrescritas por:
-
-- `DB_URL`
-- `DB_USER`
-- `DB_PASSWORD`
-
-A estrutura inicial é criada pelo Flyway:
+Flyway mantém o schema versionado:
 
 ```text
 V1__create_incidents.sql
+V2__create_approval_records.sql
 ```
 
-O Hibernate está configurado com `ddl-auto=validate`, mantendo o versionamento de schema sob responsabilidade das migrations.
+A tabela `approval_records` mantém vínculo por foreign key com `incidents` e registra decisão, ator, justificativa e instante da decisão.
+
+O Hibernate utiliza `ddl-auto=validate`, mantendo alterações de schema sob responsabilidade das migrations.
+
+Configurações podem ser sobrescritas por `DB_URL`, `DB_USER` e `DB_PASSWORD`.
+
+## 🧪 Qualidade e CI
+
+O pipeline executa:
+
+```text
+Checkout
+   ↓
+Java 21
+   ↓
+mvn verify
+   ↓
+Unit / MockMvc / Integration Tests
+   ↓
+Testcontainers + PostgreSQL
+   ↓
+JaCoCo
+   ↓
+docker build
+```
+
+Isso valida tanto o artefato Java quanto a capacidade de gerar a imagem de container antes do merge.
 
 ## 🗺️ Roadmap
 
-**v0.2.1 — Quality & CI:** PostgreSQL, Flyway, DTOs, validação, ProblemDetail, Swagger, Actuator, agente determinístico, testes unitários/MockMvc, integração PostgreSQL com Testcontainers e CI com GitHub Actions.
+**v0.2.1 — Quality & CI:** persistência PostgreSQL, Flyway, validação, ProblemDetail, testes, Testcontainers e CI.
 
-**v0.3 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, `LogAnalyzerAgent` e `PerformanceAgent`.
+**v0.3 — Governance Foundation:** SecurityAgent, pipeline de investigação, Policy Engine, Human Approval, Audit Trail e validação da imagem Docker no CI.
 
-**v0.4 — Agentic AI:** Spring AI, integração LLM, Tool Calling/MCP, RAG para runbooks e memória de incidentes.
+**v0.4 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, LogAnalyzerAgent e PerformanceAgent.
 
-**v0.5 — Governance & Security:** `SecurityAgent`, Policy Engine, Human-in-the-Loop, auditoria e integração controlada com GitHub.
+**v0.5 — Agentic AI:** Spring AI, LLM, RAG para runbooks, Tool Calling/MCP e memória de incidentes.
 
-**v1.0 — Cloud-native:** Kafka, Redis, Kubernetes, AWS, `CodeAgent`, CI/CD avançado e testes de resiliência.
+**v0.6 — Controlled Remediation:** catálogo de ações permitidas, autorização, idempotência, dry-run, execução controlada e auditoria completa.
+
+**v1.0 — Cloud-native:** Kafka, Redis, Kubernetes, AWS, CodeAgent, CI/CD avançado e testes de resiliência.
 
 ## 🔐 Segurança e governança
 
-Nenhuma ação crítica deve depender exclusivamente da decisão de um LLM.
+O projeto adota uma separação explícita entre:
 
-A evolução do projeto seguirá princípios de least privilege, ferramentas explicitamente autorizadas, validação de parâmetros, separação entre recomendação e execução, aprovação humana para operações sensíveis e trilha de auditoria.
+```text
+ANALYZE → RECOMMEND → POLICY → APPROVE → AUDIT → EXECUTE
+```
 
-Credenciais reais não devem ser commitadas no repositório. Para ambientes além do desenvolvimento local, use secrets e variáveis de ambiente.
+Na v0.3, o fluxo termina em **AUDIT**.
+
+A futura etapa `EXECUTE` deverá usar least privilege, ferramentas explicitamente autorizadas, validação de parâmetros, autorização independente do LLM, idempotência, limites operacionais e trilha completa de auditoria.
+
+Credenciais reais não devem ser commitadas. Ambientes externos devem usar secrets e variáveis de ambiente.
 
 ## 📈 Objetivo de engenharia
 
-O objetivo é explorar como agentes de IA podem participar de operações de software sem abandonar fundamentos de engenharia:
+O SentinelOps AI explora como agentes e modelos de IA podem participar de operações de software sem substituir controles determinísticos de engenharia:
 
 ```text
-Observe → Detect → Investigate → Correlate → Recommend → Approve → Act → Learn
+Observe → Detect → Investigate → Correlate → Recommend → Govern → Approve → Act → Learn
 ```
+
+O objetivo não é criar um agente com acesso irrestrito à infraestrutura, mas uma plataforma de investigação e automação governada.
 
 ## 👨‍💻 Autor
 
