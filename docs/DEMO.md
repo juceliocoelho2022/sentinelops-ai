@@ -58,10 +58,11 @@ Observe the three responsibilities in the response:
 ```json
 {
   "decision": "APPROVED",
-  "decidedBy": "demo.reviewer",
   "reason": "Evidence reviewed for portfolio demonstration"
 }
 ```
+
+The actor is derived from the authenticated JWT principal. The token must carry the `incident:approve` scope.
 
 ### 4. Inspect the audit trail
 
@@ -77,7 +78,7 @@ The API returns the persisted decision history.
 
 The current version does **not** execute infrastructure actions. Approval is an auditable human decision, not permission for an LLM to directly change Kubernetes, AWS, databases or source code.
 
-The current `decidedBy` value is supplied by the caller for demonstration purposes. A future security iteration should derive actor identity from an authenticated principal rather than trusting request input.
+The approval endpoint is protected by JWT authentication and the `incident:approve` scope. The audit actor is derived from the authenticated principal, not from request input. A persisted `DENY_ACTION` cannot be overridden through the normal approval endpoint.
 
 ## What to review in the code
 
