@@ -1,0 +1,8 @@
+target/
+.idea/
+*.iml
+.env
+*.pem
+*.key
+secrets/
+application-local.yml

@@ -1,0 +1,3 @@
+package br.com.jucelio.sentinelops.dashboard;
+import br.com.jucelio.sentinelops.incident.*;import org.springframework.web.bind.annotation.*;import java.util.Map;
+@RestController @RequestMapping("/api/v1/dashboard") public class DashboardController{private final IncidentRepository repository;public DashboardController(IncidentRepository repository){this.repository=repository;}@GetMapping("/summary") public Map<String,Long> summary(){return Map.of("total",repository.count(),"open",repository.countByStatus(IncidentStatus.OPEN),"investigating",repository.countByStatus(IncidentStatus.INVESTIGATING),"critical",repository.countBySeverity(Severity.CRITICAL));}}
