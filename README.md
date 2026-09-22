@@ -25,6 +25,30 @@ Para avaliação técnica e recrutamento, este repositório demonstra competênc
 - **Segurança:** Spring Security, OAuth2 Resource Server/JWT, autorização por scope e identidade de auditoria derivada do principal autenticado.
 - **Engenharia segura:** separação explícita entre recomendação, autorização/aprovação e futura execução privilegiada.
 
+## 🧭 Princípios de engenharia: autonomia e decisão técnica
+
+Este projeto também funciona como laboratório de evolução profissional em **Java Backend**. O objetivo não é acumular frameworks no repositório, mas demonstrar capacidade de receber um problema, analisar alternativas, tomar decisões técnicas, implementar, testar e preparar a solução para operação.
+
+Cada evolução relevante do SentinelOps AI procura responder quatro perguntas:
+
+1. **Qual problema estamos resolvendo?**
+2. **Por que esta solução foi escolhida?**
+3. **Quais trade-offs e limites ela introduz?**
+4. **Como validamos que a decisão funciona?**
+
+Exemplos já aplicados:
+
+| Problema | Decisão de engenharia | Trade-off / limite | Validação |
+|---|---|---|---|
+| Identidade de quem aprova | JWT + principal autenticado | exige um Identity Provider confiável em runtime | testes de autenticação/autorização |
+| Aprovação indevida | scope `incident:approve` | autorização por endpoint ainda pode evoluir para políticas mais granulares | cenários 401, 403 e autorizado |
+| Humano tentando contornar política | Policy Evaluation persistida + enforcement | somente `REQUIRE_APPROVAL` aceita decisão humana | testes de `ALLOW_RECOMMENDATION`, `REQUIRE_APPROVAL` e `DENY_ACTION` |
+| Diferença entre teste e PostgreSQL real | Testcontainers | maior custo de execução do pipeline | `mvn verify` com PostgreSQL em container |
+| Mudanças implícitas no banco | Flyway + `ddl-auto=validate` | migrations precisam ser mantidas explicitamente | startup e testes de integração |
+| Artefato Java funcionar mas container falhar | Docker build no CI | pipeline leva mais tempo | imagem construída a cada CI |
+
+Essa abordagem direciona o roadmap: **mensageria, observabilidade, resiliência e cloud só entram quando houver um problema técnico claro que justifique a tecnologia.**
+
 ### Cenário de negócio
 
 Imagine uma API Java de pagamentos apresentando degradação. O SentinelOps recebe o incidente, executa análises especializadas, classifica o risco, aplica uma política determinística e registra uma eventual decisão humana. O objetivo é reduzir o tempo de investigação sem entregar controle irrestrito da infraestrutura a um agente de IA.
@@ -320,7 +344,7 @@ Isso valida tanto o artefato Java quanto a capacidade de gerar a imagem de conta
 
 **v0.3.2 — Security & Governance Hardening:** JWT, autorização por scope, identidade autenticada no Audit Trail, persistência da PolicyEvaluation, enforcement de `REQUIRE_APPROVAL` e bloqueio de `DENY_ACTION`.
 
-**v0.4 — Observability Intelligence:** Prometheus, Grafana, Loki, Tempo, LogAnalyzerAgent e PerformanceAgent.
+**v0.4 — Observability Intelligence:** instrumentação com métricas, logs e traces para diagnosticar comportamento em runtime; Prometheus, Grafana, Loki e Tempo serão introduzidos para sustentar `LogAnalyzerAgent` e `PerformanceAgent`, com foco em investigação baseada em evidências e operação.
 
 **v0.5 — Agentic AI:** Spring AI, LLM, RAG para runbooks, Tool Calling/MCP e memória de incidentes.
 
