@@ -7,6 +7,8 @@ import br.com.jucelio.sentinelops.incident.IncidentStatus;
 import br.com.jucelio.sentinelops.incident.Severity;
 import br.com.jucelio.sentinelops.security.SecurityFinding;
 import br.com.jucelio.sentinelops.security.SecurityRiskLevel;
+import br.com.jucelio.sentinelops.policy.PolicyDecision;
+import br.com.jucelio.sentinelops.policy.PolicyEvaluation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,7 +67,9 @@ class IncidentControllerTest {
                 List.of("require human approval"),
                 true);
         IncidentInvestigation result = new IncidentInvestigation(
-                incidentAnalysis, securityAnalysis, true);
+                incidentAnalysis,
+                securityAnalysis,
+                new PolicyEvaluation(PolicyDecision.DENY_ACTION, List.of("critical risk")));
 
         when(service.investigate(1L)).thenReturn(result);
 
@@ -73,6 +77,6 @@ class IncidentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.incidentAnalysis.probableCause").value("Dependency degradation"))
                 .andExpect(jsonPath("$.securityAnalysis.riskLevel").value("CRITICAL"))
-                .andExpect(jsonPath("$.humanApprovalRequired").value(true));
+                .andExpect(jsonPath("$.policyEvaluation.decision").value("DENY_ACTION"));
     }
 }
