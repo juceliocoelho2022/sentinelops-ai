@@ -6,11 +6,15 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/sentinelops
       DB_USER: sentinelops
       DB_PASSWORD: sentinelops
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
+      TRACING_SAMPLING_PROBABILITY: "1.0"
     ports:
       - "8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
+      tempo:
+        condition: service_started
 
   postgres:
     image: postgres:17-alpine
@@ -54,6 +58,17 @@ services:
     depends_on:
       - prometheus
 
+
+  tempo:
+    image: grafana/tempo:2.8.2
+    container_name: sentinelops-tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+      - "4318:4318"
 
   loki:
     image: grafana/loki:3.5.5
