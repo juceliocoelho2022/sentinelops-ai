@@ -15,6 +15,11 @@ spring:
     model:
       chat: ${SPRING_AI_MODEL_CHAT:none}
       embedding: none
+      audio:
+        speech: none
+        transcription: none
+      image: none
+      moderation: none
     openai:
       api-key: ${OPENAI_API_KEY:}
       chat:
