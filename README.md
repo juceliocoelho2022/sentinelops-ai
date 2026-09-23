@@ -7,10 +7,10 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-CI%20validated-2496ED?logo=docker&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
-![Status](https://img.shields.io/badge/status-v0.4-blue)
+![Status](https://img.shields.io/badge/status-v0.5%20in%20progress-blue)
 [![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
-**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A v0.4 adiciona uma fundação de observabilidade correlacionada sobre a governança da v0.3.2: métricas com Prometheus, dashboards Grafana, logs JSON com Loki, tracing OpenTelemetry/Tempo e um contrato `IncidentEvidence` para preparar investigação baseada em evidências.
+**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A v0.5 está em desenvolvimento sobre a fundação de governança e observabilidade das versões anteriores: o projeto já possui um gateway de investigação por IA, integração opt-in com Spring AI/OpenAI, endpoint protegido por JWT e fallback determinístico. A integração real com a API da OpenAI foi alcançada em runtime; o teste externo ficou bloqueado por `HTTP 429 / credit_balance_exhausted`, sem alteração do código para mascarar a limitação do provider.
 
 ## 💼 O que este projeto demonstra
 
@@ -71,11 +71,11 @@ ALLOW_RECOMMENDATION | REQUIRE_APPROVAL | DENY_ACTION
                       Audit Trail
 ```
 
- > A v0.4 demonstra governança e observabilidade real. LLMs e execução controlada continuam separados no roadmap para não confundir funcionalidades atuais com futuras.
+> A v0.5 adiciona investigação assistida por LLM de forma opt-in. A IA produz recomendações; autorização, política e futura execução privilegiada permanecem fora do controle do modelo.
 
 > **RECOMMEND != EXECUTE** — análise, política e aprovação são etapas distintas. Aprovação humana não executa automaticamente infraestrutura, banco, cloud ou Kubernetes.
 
-## ✅ Estado atual — v0.4
+## ✅ Estado atual — v0.5 em desenvolvimento
 
 Implementado:
 
@@ -102,9 +102,18 @@ Implementado:
 - logs JSON estruturados enviados por Promtail ao Loki
 - Micrometer Tracing + OpenTelemetry OTLP + Tempo
 - correlação de logs e traces por `traceId` / `spanId`
-- `IncidentEvidence` como contrato backend-neutral para a futura investigação automatizada
+- `IncidentEvidence` como contrato backend-neutral para investigação automatizada
+- `AiInvestigationGateway` como abstração de provider
+- `DeterministicAiInvestigationGateway` como fallback local e testável
+- `SpringAiInvestigationGateway` com `ChatClient` para investigação assistida por LLM
+- integração opt-in com OpenAI via Spring AI 1.1.x, compatível com Spring Boot 3.5.x
+- endpoint `POST /api/v1/incidents/{id}/ai-investigation` protegido por `SCOPE_incident:investigate`
+- modo JWT local opt-in para testes, sem enfraquecer a configuração padrão baseada em JWK
+- `GovernedAiInvestigationService` rejeita recomendações que não exijam avaliação determinística de política
+- diagnóstico de investigação com latência, gateway selecionado e timestamp
+- chamada real ao provider OpenAI comprovada em runtime; validação final da resposta está pendente por indisponibilidade de créditos da API
 
-Ainda estão no roadmap: adapters que consultem Prometheus/Loki/Tempo em tempo real, Kafka, Spring AI/LLM, RAG, MCP/Tool Calling, execução controlada, Kubernetes e AWS.
+Ainda estão no roadmap: adapters que consultem Prometheus/Loki/Tempo em tempo real, integração efetiva da recomendação de IA com o `PolicyEngine`, RAG para runbooks, Tool Calling/MCP, memória de incidentes, Kafka, execução controlada, Kubernetes e AWS.
 
 ## 🏗️ Arquitetura atual
 
@@ -189,7 +198,7 @@ Agent      Agent         Agent
 | **LogAnalyzerAgent** | Roadmap | Logs, exceções e padrões |
 | **PerformanceAgent** | Roadmap | Latência, CPU, memória, JVM e banco |
 | **CodeAgent** | Roadmap | Commits/PRs e propostas de correção |
-| **Spring AI / LLM** | Roadmap | Raciocínio assistido sobre evidências e runbooks |
+| **Spring AI / LLM** | Em desenvolvimento | Gateway opt-in para investigação assistida sobre evidências; chamada ao provider validada até a API externa |
 
 ## ⚙️ Stack
 
@@ -244,6 +253,7 @@ http://localhost:8080/swagger-ui.html
 | `POST` | `/api/v1/incidents/{id}/approvals` | Registra decisão humana |
 | `GET` | `/api/v1/incidents/{id}/approvals` | Consulta histórico auditável |
 | `GET` | `/api/v1/dashboard/summary` | Resumo operacional |
+| `POST` | `/api/v1/incidents/{id}/ai-investigation` | Executa investigação assistida por IA; exige `incident:investigate` |
 | `GET` | `/actuator/health` | Health check |
 
 ## 🔎 Investigação governada
@@ -306,6 +316,36 @@ Com a aplicação em execução, um avaliador pode percorrer o fluxo principal p
 
 Esse percurso evidencia a separação entre investigação, decisão de política e auditoria humana.
 
+## 🤖 Investigação assistida por IA — v0.5
+
+A v0.5 introduz IA sem transferir autoridade operacional ao modelo:
+
+```text
+IncidentEvidence
+      ↓
+AiInvestigationGateway
+      ├── Deterministic fallback
+      └── Spring AI / OpenAI (opt-in)
+                    ↓
+        AiInvestigationRecommendation
+                    ↓
+      requiresPolicyEvaluation = true
+                    ↓
+              Policy Engine
+                    ↓
+        Human Approval / Audit
+```
+
+**Limite atual importante:** `requiresPolicyEvaluation=true` é um guardrail aplicado pelo serviço, mas a recomendação de IA ainda não dispara diretamente o `PolicyEngine`. Essa integração permanece como próximo incremento para preservar a separação entre recomendação probabilística e decisão determinística.
+
+### Validação real do provider
+
+O caminho Spring AI → OpenAI foi exercitado em runtime. A API externa respondeu com `HTTP 429`, `insufficient_quota` / `credit_balance_exhausted`. Isso confirma que autenticação local, endpoint protegido, seleção do gateway Spring AI e chamada ao provider foram alcançados; não confirma ainda uma resposta LLM bem-sucedida. O projeto mantém o fallback determinístico para desenvolvimento e testes sem dependência de API paga.
+
+### Próximo hardening identificado em runtime
+
+Durante o teste do provider, o `RequestDiagnosticsFilter` registrou `status=200` antes de a exceção downstream resultar em erro para o cliente. Esse comportamento foi registrado como dívida técnica da v0.5 e será corrigido junto com tratamento explícito de indisponibilidade/quota do provider, métricas de IA e proveniência do gateway.
+
 ## 🧠 Decisões de engenharia
 
 **Policy Engine determinístico:** decisões críticas de governança não ficam exclusivamente sob responsabilidade de um modelo probabilístico.
@@ -352,7 +392,7 @@ Isso valida tanto o artefato Java quanto a capacidade de gerar a imagem de conta
 
 **v0.4 — Observability Intelligence — concluída:** métricas com Prometheus, dashboard Grafana, logs JSON com Loki/Promtail, tracing OpenTelemetry/Tempo, correlação por `traceId`/`spanId` e contrato `IncidentEvidence`. O contrato ainda não consulta os backends em tempo real; adapters de coleta permanecem como evolução incremental.
 
-**v0.5 — Agentic AI:** Spring AI, LLM, RAG para runbooks, Tool Calling/MCP e memória de incidentes.
+**v0.5 — Agentic AI — em desenvolvimento:** abstração `AiInvestigationGateway`, fallback determinístico, Spring AI `ChatClient`, provider OpenAI opt-in, endpoint governado protegido por JWT e diagnósticos de latência/gateway já implementados. Próximos incrementos: resiliência do provider, correção da telemetria em exceções, integração efetiva com `PolicyEngine`, RAG para runbooks, Tool Calling/MCP e memória de incidentes.
 
 **v0.6 — Controlled Remediation:** catálogo de ações permitidas, autorização, idempotência, dry-run, execução controlada e auditoria completa.
 
