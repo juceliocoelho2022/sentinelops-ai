@@ -46,5 +46,9 @@ springdoc:
     path: /swagger-ui.html
 
 sentinelops:
+  security:
+    local-jwt:
+      enabled: ${SENTINELOPS_LOCAL_JWT_ENABLED:false}
+      secret: ${SENTINELOPS_LOCAL_JWT_SECRET:}
   ai:
     mode: ${SENTINELOPS_AI_MODE:deterministic}
