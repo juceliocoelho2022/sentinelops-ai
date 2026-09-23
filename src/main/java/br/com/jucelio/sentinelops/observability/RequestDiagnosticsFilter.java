@@ -22,15 +22,31 @@ public class RequestDiagnosticsFilter extends OncePerRequestFilter {
             FilterChain filterChain) throws ServletException, IOException {
 
         long startedAt = System.nanoTime();
+        Throwable failure = null;
+
         try {
             filterChain.doFilter(request, response);
+        } catch (IOException | ServletException | RuntimeException ex) {
+            failure = ex;
+            throw ex;
         } finally {
             long durationMs = (System.nanoTime() - startedAt) / 1_000_000;
-            log.info("HTTP request completed method={} path={} status={} durationMs={}",
+            int status = failure == null
+                    ? response.getStatus()
+                    : normalizeFailureStatus(response.getStatus());
+
+            log.info("HTTP request completed method={} path={} status={} durationMs={} outcome={}",
                     request.getMethod(),
                     request.getRequestURI(),
-                    response.getStatus(),
-                    durationMs);
+                    status,
+                    durationMs,
+                    failure == null ? "SUCCESS" : "ERROR");
         }
+    }
+
+    private int normalizeFailureStatus(int responseStatus) {
+        return responseStatus >= 400
+                ? responseStatus
+                : HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
     }
 }
