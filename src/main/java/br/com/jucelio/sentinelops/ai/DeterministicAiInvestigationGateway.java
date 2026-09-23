@@ -2,11 +2,9 @@ package br.com.jucelio.sentinelops.ai;
 
 import br.com.jucelio.sentinelops.observability.IncidentEvidence;
 import java.util.List;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnMissingBean(AiInvestigationGateway.class)
 public class DeterministicAiInvestigationGateway implements AiInvestigationGateway {
 
     @Override
