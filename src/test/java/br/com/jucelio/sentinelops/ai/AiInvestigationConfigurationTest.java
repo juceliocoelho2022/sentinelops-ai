@@ -3,25 +3,34 @@ package br.com.jucelio.sentinelops.ai;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 class AiInvestigationConfigurationTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(AiInvestigationConfiguration.class));
+            .withUserConfiguration(AiInvestigationConfiguration.class);
 
     @Test
-    void shouldKeepDeterministicModeWhenSpringAiIsNotExplicitlyEnabled() {
-        contextRunner.run(context ->
-                assertThat(context).doesNotHaveBean("springAiInvestigationGateway"));
+    void doesNotCreateSpringAiGatewayInDeterministicMode() {
+        contextRunner
+                .withPropertyValues("sentinelops.ai.mode=deterministic")
+                .run(context -> assertThat(context).doesNotHaveBean(AiInvestigationGateway.class));
     }
 
     @Test
-    void shouldNotCreateSpringAiGatewayWithoutChatClientBuilderEvenWhenEnabled() {
+    void createsSpringAiGatewayWhenSpringAiModeAndBuilderAreAvailable() {
+        ChatClient.Builder builder = org.mockito.Mockito.mock(ChatClient.Builder.class);
+        ChatClient chatClient = org.mockito.Mockito.mock(ChatClient.class);
+        org.mockito.Mockito.when(builder.build()).thenReturn(chatClient);
+
         contextRunner
                 .withPropertyValues("sentinelops.ai.mode=spring-ai")
-                .run(context ->
-                        assertThat(context).doesNotHaveBean("springAiInvestigationGateway"));
+                .withBean(ChatClient.Builder.class, () -> builder)
+                .run(context -> {
+                    assertThat(context).hasSingleBean(AiInvestigationGateway.class);
+                    assertThat(context.getBean(AiInvestigationGateway.class))
+                            .isInstanceOf(SpringAiInvestigationGateway.class);
+                });
     }
 }
