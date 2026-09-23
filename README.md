@@ -7,10 +7,10 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-CI%20validated-2496ED?logo=docker&logoColor=white)
 ![Flyway](https://img.shields.io/badge/Flyway-migrations-red)
-![Status](https://img.shields.io/badge/status-v0.3.2-blue)
+![Status](https://img.shields.io/badge/status-v0.4-blue)
 [![CI](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/juceliocoelho2022/sentinelops-ai/actions/workflows/ci.yml)
 
-**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A versão 0.3.2 combina agentes determinísticos, Policy Enforcement persistido, autenticação JWT, autorização por scope, decisão humana auditável, PostgreSQL, testes de integração e CI/CD.
+**SentinelOps AI** é um projeto de engenharia backend voltado à investigação governada de incidentes em sistemas Java. A v0.4 adiciona uma fundação de observabilidade correlacionada sobre a governança da v0.3.2: métricas com Prometheus, dashboards Grafana, logs JSON com Loki, tracing OpenTelemetry/Tempo e um contrato `IncidentEvidence` para preparar investigação baseada em evidências.
 
 ## 💼 O que este projeto demonstra
 
@@ -71,11 +71,11 @@ ALLOW_RECOMMENDATION | REQUIRE_APPROVAL | DENY_ACTION
                       Audit Trail
 ```
 
- > A v0.3.2 demonstra a fundação de governança e o endurecimento de segurança. Observabilidade real, LLMs e execução controlada aparecem separadamente no roadmap para não confundir funcionalidades atuais com futuras.
+ > A v0.4 demonstra governança e observabilidade real. LLMs e execução controlada continuam separados no roadmap para não confundir funcionalidades atuais com futuras.
 
 > **RECOMMEND != EXECUTE** — análise, política e aprovação são etapas distintas. Aprovação humana não executa automaticamente infraestrutura, banco, cloud ou Kubernetes.
 
-## ✅ Estado atual — v0.3.2
+## ✅ Estado atual — v0.4
 
 Implementado:
 
@@ -97,8 +97,14 @@ Implementado:
 - GitHub Actions com `mvn verify`
 - build da imagem Docker validado pelo CI
 - execução da aplicação como usuário não-root no container
+- Micrometer + Prometheus para métricas de runtime
+- Grafana provisionado com dashboard de diagnóstico
+- logs JSON estruturados enviados por Promtail ao Loki
+- Micrometer Tracing + OpenTelemetry OTLP + Tempo
+- correlação de logs e traces por `traceId` / `spanId`
+- `IncidentEvidence` como contrato backend-neutral para a futura investigação automatizada
 
-Ainda estão no roadmap: Prometheus, Grafana, Loki, Tempo, Kafka, Spring AI/LLM, MCP/Tool Calling, execução controlada, Kubernetes e AWS.
+Ainda estão no roadmap: adapters que consultem Prometheus/Loki/Tempo em tempo real, Kafka, Spring AI/LLM, RAG, MCP/Tool Calling, execução controlada, Kubernetes e AWS.
 
 ## 🏗️ Arquitetura atual
 
@@ -344,7 +350,7 @@ Isso valida tanto o artefato Java quanto a capacidade de gerar a imagem de conta
 
 **v0.3.2 — Security & Governance Hardening:** JWT, autorização por scope, identidade autenticada no Audit Trail, persistência da PolicyEvaluation, enforcement de `REQUIRE_APPROVAL` e bloqueio de `DENY_ACTION`.
 
-**v0.4 — Observability Intelligence:** instrumentação com métricas, logs e traces para diagnosticar comportamento em runtime; Prometheus, Grafana, Loki e Tempo serão introduzidos para sustentar `LogAnalyzerAgent` e `PerformanceAgent`, com foco em investigação baseada em evidências e operação.
+**v0.4 — Observability Intelligence — concluída:** métricas com Prometheus, dashboard Grafana, logs JSON com Loki/Promtail, tracing OpenTelemetry/Tempo, correlação por `traceId`/`spanId` e contrato `IncidentEvidence`. O contrato ainda não consulta os backends em tempo real; adapters de coleta permanecem como evolução incremental.
 
 **v0.5 — Agentic AI:** Spring AI, LLM, RAG para runbooks, Tool Calling/MCP e memória de incidentes.
 
@@ -386,6 +392,22 @@ Java Backend • Spring Boot • Dados • Cloud • AI Engineering
 
 **SentinelOps AI — Build reliable systems. Empower people.**
 
+
+## 🔭 Observability Intelligence — v0.4
+
+```text
+HTTP Request
+   ├── Metrics ──→ Prometheus ─┐
+   ├── JSON Logs → Loki ────────┼──→ Grafana
+   │                │           │
+   │             traceId        │
+   └── OTel ─────→ Tempo ───────┘
+                         │
+                         ▼
+                  IncidentEvidence
+```
+
+**Decisões e trade-offs:** sampling de traces em 100% é deliberado no ambiente local para demonstrabilidade e deve ser reduzido/ajustado em produção; Loki/Tempo usam configuração local de demonstração; `traceId` permite correlação operacional, mas sua alta cardinalidade exige estratégia diferente em escala; `IncidentEvidence` cria um contrato estável sem fingir que os adapters de consulta aos backends já existem.
 
 ### Runtime diagnostics dashboard (v0.4)
 
