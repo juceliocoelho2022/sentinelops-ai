@@ -26,6 +26,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/incidents/*/approvals")
                             .hasAuthority("SCOPE_incident:approve")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/incidents/*/ai-investigation")
+                            .hasAuthority("SCOPE_incident:investigate")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
                 .build();
