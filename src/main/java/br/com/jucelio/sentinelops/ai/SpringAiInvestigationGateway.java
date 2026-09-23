@@ -40,7 +40,7 @@ public class SpringAiInvestigationGateway implements AiInvestigationGateway {
                         .param("incidentId", evidence.incidentId())
                         .param("signals", signals))
                 .call()
-                .entity(AiInvestigationRecommendation.class, spec -> spec.validateSchema());
+                .entity(AiInvestigationRecommendation.class);
 
         if (recommendation == null) {
             throw new IllegalStateException("AI provider returned no investigation recommendation");
