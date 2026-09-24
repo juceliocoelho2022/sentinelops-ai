@@ -342,9 +342,39 @@ AiInvestigationGateway
 
 O caminho Spring AI → OpenAI foi exercitado em runtime. A API externa respondeu com `HTTP 429`, `insufficient_quota` / `credit_balance_exhausted`. Isso confirma que autenticação local, endpoint protegido, seleção do gateway Spring AI e chamada ao provider foram alcançados; não confirma ainda uma resposta LLM bem-sucedida. O projeto mantém o fallback determinístico para desenvolvimento e testes sem dependência de API paga.
 
-### Próximo hardening identificado em runtime
+### Demonstração local sem créditos de IA (PowerShell)
 
-Durante o teste do provider, o `RequestDiagnosticsFilter` registrou `status=200` antes de a exceção downstream resultar em erro para o cliente. Esse comportamento foi registrado como dívida técnica da v0.5 e será corrigido junto com tratamento explícito de indisponibilidade/quota do provider, métricas de IA e proveniência do gateway.
+Com JDK 21, Maven e Docker Desktop disponíveis, execute na raiz do repositório. O segredo abaixo serve apenas para uma demonstração local; use um valor próprio fora desse ambiente. Não configure `OPENAI_API_KEY` para esta demonstração.
+
+```powershell
+docker compose up -d postgres tempo
+$env:SENTINELOPS_AI_MODE = "deterministic"
+$env:SENTINELOPS_LOCAL_JWT_ENABLED = "true"
+$env:SENTINELOPS_LOCAL_JWT_SECRET = "local-demo-secret-change-this-value-2026"
+mvn spring-boot:run
+```
+
+Em outro terminal PowerShell, na mesma pasta do repositório, gere um token com o **mesmo segredo** e crie um incidente. O token gerado pelo script expira em dez minutos; gere outro se necessário.
+
+```powershell
+$secret = "local-demo-secret-change-this-value-2026"
+$token = .\scripts\new-local-investigation-token.ps1 -Secret $secret
+$headers = @{ Authorization = "Bearer $token" }
+$incident = Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:8080/api/v1/incidents" `
+  -Headers $headers -ContentType "application/json" `
+  -Body '{"title":"Falha de latência na API","serviceName":"payments-api","severity":"HIGH","description":"Demonstração local"}'
+$result = Invoke-RestMethod -Method Post `
+  -Uri "http://localhost:8080/api/v1/incidents/$($incident.id)/ai-investigation" `
+  -Headers $headers
+$result | ConvertTo-Json -Depth 6
+```
+
+Confira `mode=DETERMINISTIC_FALLBACK`, `requiresPolicyEvaluation=true` e o ID do incidente na resposta. O serviço de evidências fornece sinais **ilustrativos** de Prometheus, Loki e Tempo; ele ainda não consulta essas fontes em tempo real. Um ID inexistente retorna 404. Os logs registram `gateway`, `latencyMs` e `outcome`. A recomendação ainda não aciona o `PolicyEngine` nem executa remediações.
+
+### Diagnóstico de falhas do provider
+
+O `RequestDiagnosticsFilter` registra `outcome=ERROR` e normaliza para 500 o **status no log** quando uma exceção sai da cadeia e a resposta ainda está abaixo de 400. Ele não modifica o status HTTP da resposta. O endpoint também registra gateway e latência quando a investigação falha. Tratamento específico de indisponibilidade/quota do provider permanece como próximo incremento.
 
 ## 🧠 Decisões de engenharia
 
