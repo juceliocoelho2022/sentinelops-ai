@@ -1,6 +1,7 @@
 package br.com.jucelio.sentinelops.ai;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import br.com.jucelio.sentinelops.observability.IncidentEvidence;
 import br.com.jucelio.sentinelops.observability.IncidentEvidenceService;
+import br.com.jucelio.sentinelops.incident.IncidentNotFoundException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -60,5 +62,17 @@ class AiInvestigationControllerSecurityTest {
                 .andExpect(jsonPath("$.incidentId").value(42))
                 .andExpect(jsonPath("$.requiresPolicyEvaluation").value(true))
                 .andExpect(jsonPath("$.recommendation").doesNotExist());
+    }
+
+    @Test
+    void shouldReturnNotFoundWithoutCallingGatewayForMissingIncident() throws Exception {
+        when(evidenceService.collect(404L)).thenThrow(new IncidentNotFoundException(404L));
+
+        mockMvc.perform(post("/api/v1/incidents/404/ai-investigation")
+                        .with(jwt().authorities(() -> "SCOPE_incident:investigate")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.title").value("Incident not found"));
+
+        verifyNoInteractions(investigationService);
     }
 }
