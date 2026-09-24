@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 import br.com.jucelio.sentinelops.observability.IncidentEvidence;
 import br.com.jucelio.sentinelops.observability.IncidentEvidenceService;
@@ -28,7 +29,7 @@ class AiInvestigationControllerSecurityTest {
     IncidentEvidenceService evidenceService;
 
     @MockitoBean
-    GovernedAiInvestigationService investigationService;
+    AiInvestigationDiagnosticsService investigationService;
 
     @Test
     void shouldRejectUnauthenticatedInvestigation() throws Exception {
@@ -48,12 +49,16 @@ class AiInvestigationControllerSecurityTest {
         IncidentEvidence evidence = new IncidentEvidence(42L, Instant.now(), List.of());
         when(evidenceService.collect(42L)).thenReturn(evidence);
         when(investigationService.investigate(any())).thenReturn(
-                new AiInvestigationRecommendation(
+                new AiInvestigationDiagnostics(new AiInvestigationRecommendation(
                         42L, "DETERMINISTIC_FALLBACK", "Bounded hypothesis",
-                        List.of(), List.of("Inspect evidence"), true));
+                        List.of(), List.of("Inspect evidence"), true), 1L,
+                        "DeterministicAiInvestigationGateway", Instant.now()));
 
         mockMvc.perform(post("/api/v1/incidents/42/ai-investigation")
                         .with(jwt().authorities(() -> "SCOPE_incident:investigate")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.incidentId").value(42))
+                .andExpect(jsonPath("$.requiresPolicyEvaluation").value(true))
+                .andExpect(jsonPath("$.recommendation").doesNotExist());
     }
 }

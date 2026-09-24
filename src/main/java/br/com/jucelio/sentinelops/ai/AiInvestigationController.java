@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AiInvestigationController {
 
     private final IncidentEvidenceService evidenceService;
-    private final GovernedAiInvestigationService investigationService;
+    private final AiInvestigationDiagnosticsService investigationService;
 
     public AiInvestigationController(
             IncidentEvidenceService evidenceService,
-            GovernedAiInvestigationService investigationService) {
+            AiInvestigationDiagnosticsService investigationService) {
         this.evidenceService = evidenceService;
         this.investigationService = investigationService;
     }
@@ -25,6 +25,6 @@ public class AiInvestigationController {
     @PostMapping("/{incidentId}/ai-investigation")
     public ResponseEntity<AiInvestigationRecommendation> investigate(@PathVariable Long incidentId) {
         IncidentEvidence evidence = evidenceService.collect(incidentId);
-        return ResponseEntity.ok(investigationService.investigate(evidence));
+        return ResponseEntity.ok(investigationService.investigate(evidence).recommendation());
     }
 }
